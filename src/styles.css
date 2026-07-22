@@ -1,0 +1,114 @@
+:root {
+  --bg-top: #e8f2ef;
+  --bg-bottom: #f7f3ea;
+  --ink: #1c2b28;
+  --muted: #4a5c57;
+  --brand: #0f6b5c;
+  --surface: rgba(255, 255, 255, 0.55);
+  --border: rgba(28, 43, 40, 0.12);
+  --shadow: 0 18px 50px rgba(28, 43, 40, 0.08);
+
+  font-family: "Trebuchet MS", "Segoe UI", Candara, sans-serif;
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: linear-gradient(165deg, var(--bg-top), var(--bg-bottom));
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.lang-label {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+#lang-select {
+  font: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  padding: 0.15rem 0.2rem;
+  cursor: pointer;
+}
+
+.hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 36rem;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.brand {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2.4rem, 6vw, 3.4rem);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--brand);
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.lead {
+  margin: 0 0 1.5rem;
+  font-size: 1.15rem;
+  color: var(--muted);
+  max-width: 28rem;
+}
+
+.hint {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+  font-size: 1rem;
+}
