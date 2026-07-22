@@ -1,10 +1,74 @@
+import { invoke } from "@tauri-apps/api/core";
 import {
   applyTranslations,
   getSavedLocale,
   isLocale,
   saveLocale,
+  t,
   type Locale,
 } from "./i18n";
+
+type ToolStatus = {
+  available: boolean;
+  name: string;
+  detail: string | null;
+};
+
+type EngineStatus = {
+  imagemagick: ToolStatus;
+  ghostscript: ToolStatus;
+};
+
+function renderTool(
+  locale: Locale,
+  rootId: string,
+  status: ToolStatus,
+  tipKey: "imagemagickTip" | "ghostscriptTip",
+) {
+  const root = document.querySelector<HTMLElement>(`#${rootId}`);
+  if (!root) return;
+
+  const badge = root.querySelector<HTMLElement>('[data-role="badge"]');
+  const detail = root.querySelector<HTMLElement>('[data-role="detail"]');
+  const tip = root.querySelector<HTMLElement>('[data-role="tip"]');
+
+  root.classList.remove("is-checking", "is-ready", "is-missing");
+  root.classList.add(status.available ? "is-ready" : "is-missing");
+
+  if (badge) {
+    badge.textContent = status.available
+      ? t(locale, "statusReady")
+      : t(locale, "statusMissing");
+  }
+
+  if (detail) {
+    detail.textContent = status.available
+      ? status.detail ?? status.name
+      : "";
+    detail.hidden = !status.available;
+  }
+
+  if (tip) {
+    tip.textContent = t(locale, tipKey);
+    tip.hidden = status.available;
+  }
+}
+
+async function refreshEngines(locale: Locale) {
+  const errorEl = document.querySelector<HTMLElement>("#engines-error");
+  if (errorEl) errorEl.hidden = true;
+
+  try {
+    const status = await invoke<EngineStatus>("get_engine_status");
+    renderTool(locale, "engine-imagemagick", status.imagemagick, "imagemagickTip");
+    renderTool(locale, "engine-ghostscript", status.ghostscript, "ghostscriptTip");
+  } catch {
+    if (errorEl) {
+      errorEl.textContent = t(locale, "enginesError");
+      errorEl.hidden = false;
+    }
+  }
+}
 
 window.addEventListener("DOMContentLoaded", () => {
   const select = document.querySelector<HTMLSelectElement>("#lang-select");
@@ -17,6 +81,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (select) {
       select.value = next;
     }
+    void refreshEngines(next);
   };
 
   if (select) {

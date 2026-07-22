@@ -3,5 +3,14 @@
   "brand": "Converte Fácil",
   "headline": "Converta arquivos no seu computador",
   "privacy": "Seus arquivos ficam no seu computador. Nada é enviado para a internet.",
-  "comingSoon": "As ferramentas de conversão vêm em seguida. Esta é a tela de boas-vindas."
+  "comingSoon": "As ferramentas de conversão vêm em seguida. Esta é a tela de boas-vindas.",
+  "enginesTitle": "Ferramentas neste computador",
+  "statusChecking": "Verificando…",
+  "statusReady": "Pronto",
+  "statusMissing": "Não encontrado",
+  "imagemagickLabel": "ImageMagick",
+  "ghostscriptLabel": "Ghostscript (para PDF)",
+  "imagemagickTip": "Instale o ImageMagick e deixe o comando magick no PATH. Depois vamos embutir no instalador.",
+  "ghostscriptTip": "Instale o Ghostscript para PDF (gswin64c). Depois vamos embutir no instalador.",
+  "enginesError": "Não foi possível verificar as ferramentas. Tente reiniciar o app."
 }
