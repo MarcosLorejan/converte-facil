@@ -1,0 +1,19 @@
+[package]
+name = "converte-facil"
+version = "0.1.0"
+description = "Local image and PDF converter — simple UI, no uploads"
+authors = ["Converte Facil"]
+edition = "2021"
+
+[lib]
+name = "converte_facil_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
