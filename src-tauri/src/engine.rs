@@ -55,8 +55,14 @@ fn probe_command(candidates: &[&str], args: &[&str]) -> ToolStatus {
 }
 
 pub fn detect_engines() -> EngineStatus {
+    // On Windows, never fall back to `convert` — it collides with System32\convert.exe.
+    #[cfg(windows)]
+    let imagemagick = probe_command(&["magick"], &["-version"]);
+    #[cfg(not(windows))]
+    let imagemagick = probe_command(&["magick", "convert"], &["-version"]);
+
     EngineStatus {
-        imagemagick: probe_command(&["magick", "convert"], &["-version"]),
+        imagemagick,
         ghostscript: probe_command(&["gswin64c", "gswin32c", "gs"], &["-version"]),
     }
 }
