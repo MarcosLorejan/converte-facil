@@ -20,7 +20,7 @@ Built so anyone can use it — large UI, clear steps, and language options (Engl
 - Engine: [ImageMagick](https://github.com/ImageMagick/ImageMagick)
 - PDF: Ghostscript
 - Initial target: Windows installable `.exe`
-- UI i18n: English + Portuguese
+- UI i18n: English + Portuguese (see [docs/i18n.md](docs/i18n.md))
 
 ## Run from source (Windows)
 
