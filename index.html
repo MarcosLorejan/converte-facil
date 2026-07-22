@@ -25,8 +25,41 @@
         <p class="lead" data-i18n="privacy">
           Your files stay on your computer. Nothing is uploaded to the internet.
         </p>
+
+        <section class="drop-section" aria-labelledby="drop-title">
+          <h2 id="drop-title" data-i18n="dropTitle">Add a photo</h2>
+
+          <div
+            id="drop-zone"
+            class="drop-zone"
+            role="button"
+            tabindex="0"
+            aria-describedby="drop-hint"
+          >
+            <p id="drop-hint" class="drop-hint" data-i18n="dropHint">
+              Drop an image here, or click to choose a file
+            </p>
+            <button type="button" id="drop-browse" class="drop-browse" data-i18n="dropBrowse">
+              Choose file
+            </button>
+          </div>
+
+          <p id="drop-error" class="drop-error" role="alert" hidden></p>
+
+          <div id="selection" class="selection" hidden>
+            <img id="selection-preview" class="selection-preview" alt="" />
+            <div class="selection-meta">
+              <p class="selection-label" data-i18n="selectedLabel">Selected file</p>
+              <p id="selection-name" class="selection-name"></p>
+              <button type="button" id="drop-clear" class="drop-clear" data-i18n="dropClear">
+                Remove
+              </button>
+            </div>
+          </div>
+        </section>
+
         <p class="hint" data-i18n="comingSoon">
-          Conversion tools are coming next. This is the welcome screen.
+          Conversion tools are coming next. Pick a photo to get started.
         </p>
 
         <section class="engines" aria-live="polite">
