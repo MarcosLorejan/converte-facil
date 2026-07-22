@@ -3,7 +3,7 @@
   "brand": "Converte Fácil",
   "headline": "Converta arquivos no seu computador",
   "privacy": "Seus arquivos ficam no seu computador. Nada é enviado para a internet.",
-  "comingSoon": "As ferramentas de conversão vêm em seguida. Esta é a tela de boas-vindas.",
+  "comingSoon": "As ferramentas de conversão vêm em seguida. Escolha uma foto para começar.",
   "enginesTitle": "Ferramentas neste computador",
   "statusChecking": "Verificando…",
   "statusReady": "Pronto",
@@ -12,5 +12,12 @@
   "ghostscriptLabel": "Ghostscript (para PDF)",
   "imagemagickTip": "Instale o ImageMagick e deixe o comando magick no PATH. Depois vamos embutir no instalador.",
   "ghostscriptTip": "Instale o Ghostscript para PDF (gswin64c). Depois vamos embutir no instalador.",
-  "enginesError": "Não foi possível verificar as ferramentas. Tente reiniciar o app."
+  "enginesError": "Não foi possível verificar as ferramentas. Tente reiniciar o app.",
+  "dropTitle": "Adicionar uma foto",
+  "dropHint": "Solte uma imagem aqui, ou clique para escolher um arquivo",
+  "dropBrowse": "Escolher arquivo",
+  "dropClear": "Remover",
+  "dropUnsupported": "Este tipo de arquivo não é suportado. Tente JPG, PNG, WEBP, GIF, TIFF ou BMP.",
+  "dropMulti": "Por enquanto, adicione uma imagem por vez.",
+  "selectedLabel": "Arquivo selecionado"
 }

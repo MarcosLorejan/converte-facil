@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { initDropZone } from "./dropzone";
 import {
   applyTranslations,
   getSavedLocale,
@@ -74,10 +75,13 @@ window.addEventListener("DOMContentLoaded", () => {
   const select = document.querySelector<HTMLSelectElement>("#lang-select");
   let locale: Locale = getSavedLocale();
 
+  const dropZone = initDropZone(() => locale);
+
   const setLocale = (next: Locale) => {
     locale = next;
     saveLocale(next);
     applyTranslations(next);
+    dropZone?.refreshCopy(next);
     if (select) {
       select.value = next;
     }
