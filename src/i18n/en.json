@@ -3,5 +3,14 @@
   "brand": "Converte Fácil",
   "headline": "Convert files on your computer",
   "privacy": "Your files stay on your computer. Nothing is uploaded to the internet.",
-  "comingSoon": "Conversion tools are coming next. This is the welcome screen."
+  "comingSoon": "Conversion tools are coming next. This is the welcome screen.",
+  "enginesTitle": "Tools on this computer",
+  "statusChecking": "Checking…",
+  "statusReady": "Ready",
+  "statusMissing": "Not found",
+  "imagemagickLabel": "ImageMagick",
+  "ghostscriptLabel": "Ghostscript (for PDF)",
+  "imagemagickTip": "Install ImageMagick and make sure the magick command is on your PATH. Later we will bundle it in the installer.",
+  "ghostscriptTip": "Install Ghostscript for PDF conversion (gswin64c). Later we will bundle it in the installer.",
+  "enginesError": "Could not check the conversion tools. Try restarting the app."
 }
