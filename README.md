@@ -16,7 +16,7 @@ Built so anyone can use it — large UI, clear steps, and language options (Engl
 
 ## Tech base
 
-- Desktop UI (Tauri or Electron — decided in the stack issue)
+- Desktop UI: **Tauri 2** + Vite + TypeScript (see [ADR 0001](docs/adr/0001-desktop-stack.md))
 - Engine: [ImageMagick](https://github.com/ImageMagick/ImageMagick)
 - PDF: Ghostscript
 - Initial target: Windows installable `.exe`
