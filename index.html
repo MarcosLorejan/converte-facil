@@ -28,6 +28,29 @@
         <p class="hint" data-i18n="comingSoon">
           Conversion tools are coming next. This is the welcome screen.
         </p>
+
+        <section class="engines" aria-live="polite">
+          <h2 data-i18n="enginesTitle">Tools on this computer</h2>
+          <ul class="engine-list">
+            <li id="engine-imagemagick" class="engine-item is-checking">
+              <div class="engine-row">
+                <span class="engine-name" data-i18n="imagemagickLabel">ImageMagick</span>
+                <span class="engine-badge" data-role="badge" data-i18n="statusChecking">Checking…</span>
+              </div>
+              <p class="engine-detail" data-role="detail"></p>
+              <p class="engine-tip" data-role="tip" data-i18n="imagemagickTip" hidden></p>
+            </li>
+            <li id="engine-ghostscript" class="engine-item is-checking">
+              <div class="engine-row">
+                <span class="engine-name" data-i18n="ghostscriptLabel">Ghostscript (for PDF)</span>
+                <span class="engine-badge" data-role="badge" data-i18n="statusChecking">Checking…</span>
+              </div>
+              <p class="engine-detail" data-role="detail"></p>
+              <p class="engine-tip" data-role="tip" data-i18n="ghostscriptTip" hidden></p>
+            </li>
+          </ul>
+          <p id="engines-error" class="engines-error" hidden data-i18n="enginesError"></p>
+        </section>
       </main>
     </div>
   </body>
