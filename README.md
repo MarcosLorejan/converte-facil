@@ -70,6 +70,11 @@ See [milestones](../../milestones) and [issues](../../issues) for the full plan.
 
 Usability sessions (non-technical users): [docs/usability-test.md](docs/usability-test.md).
 
+## Community
+
+- [Contributing](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+
 ## Security
 
 To report a vulnerability, see [SECURITY.md](SECURITY.md). Do not file public issues for security reports.
