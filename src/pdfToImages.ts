@@ -1,5 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import {
+  applyHumanizedError,
+  clearHumanizedError,
+  humanizeError,
+} from "./errors";
 import { fileNameFromPath } from "./images";
 import { t, type Locale } from "./i18n";
 
@@ -7,19 +12,6 @@ export type PdfImageFormat = "png" | "jpg";
 
 function isPdfPath(path: string): boolean {
   return path.toLowerCase().endsWith(".pdf");
-}
-
-function mapPdfError(locale: Locale, code: unknown): string {
-  switch (code) {
-    case "missing_imagemagick":
-      return t(locale, "convertMissingMagick");
-    case "missing_ghostscript":
-      return t(locale, "pdfMissingGhostscript");
-    case "spawn_failed":
-      return t(locale, "convertSpawnFailed");
-    default:
-      return t(locale, "pdfConvertFailed");
-  }
 }
 
 export type PdfToImagesController = {
@@ -55,19 +47,32 @@ export function initPdfToImages(
   let pdfPath: string | null = null;
   let format: PdfImageFormat | null = null;
   let busy = false;
+  let lastRawError: unknown = null;
+  let plainErrorKey: "pdfUnsupported" | null = null;
 
   const formatButtons = Array.from(
     formatList.querySelectorAll<HTMLButtonElement>("[data-pdf-format]"),
   );
 
-  const showError = (message: string) => {
-    errorEl.textContent = message;
+  const showPlainError = (key: "pdfUnsupported") => {
+    lastRawError = null;
+    plainErrorKey = key;
+    clearHumanizedError(errorEl);
+    errorEl.textContent = t(getLocale(), key);
     errorEl.hidden = false;
   };
 
+  const showInvokeError = (error: unknown, locale: Locale) => {
+    plainErrorKey = null;
+    lastRawError = error;
+    const humanized = humanizeError(locale, error, "pdfConvertFailed");
+    applyHumanizedError(errorEl, locale, humanized);
+  };
+
   const clearError = () => {
-    errorEl.textContent = "";
-    errorEl.hidden = true;
+    lastRawError = null;
+    plainErrorKey = null;
+    clearHumanizedError(errorEl);
   };
 
   const syncEnabled = () => {
@@ -105,7 +110,7 @@ export function initPdfToImages(
       });
       if (result === null || Array.isArray(result)) return;
       if (!isPdfPath(result)) {
-        showError(t(getLocale(), "pdfUnsupported"));
+        showPlainError("pdfUnsupported");
         return;
       }
       setSelection(result);
@@ -135,6 +140,7 @@ export function initPdfToImages(
     clearError();
     statusEl.hidden = true;
     statusEl.classList.remove("is-error", "is-success");
+    statusEl.replaceChildren();
     setSelection(null);
   });
 
@@ -161,6 +167,7 @@ export function initPdfToImages(
       convertButton.classList.add("is-busy");
       statusEl.hidden = false;
       statusEl.classList.remove("is-error", "is-success");
+      statusEl.replaceChildren();
       statusEl.textContent = t(locale, "pdfConvertProgress");
 
       try {
@@ -175,10 +182,11 @@ export function initPdfToImages(
           String(pageCount),
         );
       } catch (error) {
-        const message = mapPdfError(locale, error);
+        const humanized = humanizeError(locale, error, "pdfConvertFailed");
         statusEl.classList.add("is-error");
-        statusEl.textContent = message;
-        showError(message);
+        statusEl.replaceChildren();
+        statusEl.textContent = humanized.message;
+        showInvokeError(error, locale);
       } finally {
         busy = false;
         convertButton.classList.remove("is-busy");
@@ -203,7 +211,19 @@ export function initPdfToImages(
         }
       });
       if (!statusEl.hidden && convertButton.classList.contains("is-busy")) {
+        statusEl.replaceChildren();
         statusEl.textContent = t(locale, "pdfConvertProgress");
+      }
+      if (plainErrorKey) {
+        errorEl.textContent = t(locale, plainErrorKey);
+        errorEl.hidden = false;
+      } else if (lastRawError != null) {
+        const humanized = humanizeError(locale, lastRawError, "pdfConvertFailed");
+        applyHumanizedError(errorEl, locale, humanized);
+        if (!statusEl.hidden && statusEl.classList.contains("is-error")) {
+          statusEl.replaceChildren();
+          statusEl.textContent = humanized.message;
+        }
       }
     },
   };

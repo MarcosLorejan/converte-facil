@@ -13,6 +13,7 @@ export type QueueItemStatus = "idle" | "converting" | "success" | "error";
 type QueueItem = SelectedImage & {
   status: QueueItemStatus;
   errorMessage: string;
+  errorDetails: string;
 };
 
 type DropZoneUi = {
@@ -29,6 +30,7 @@ export type DropZoneController = {
     path: string,
     status: QueueItemStatus,
     errorMessage?: string,
+    errorDetails?: string,
   ) => void;
   resetStatuses: () => void;
   refreshCopy: (locale: Locale) => void;
@@ -101,10 +103,29 @@ export function initDropZone(
       name.className = "queue-name";
       name.textContent = item.name;
 
-      const status = document.createElement("p");
+      const status = document.createElement("div");
       status.className = "queue-status";
-      status.textContent = statusLabel(locale, item);
       status.hidden = item.status === "idle";
+
+      const statusText = document.createElement("p");
+      statusText.className = "queue-status-text";
+      statusText.textContent = statusLabel(locale, item);
+      status.appendChild(statusText);
+
+      if (item.status === "error" && item.errorDetails) {
+        const details = document.createElement("details");
+        details.className = "error-details";
+
+        const summary = document.createElement("summary");
+        summary.textContent = t(locale, "errorDetails");
+
+        const body = document.createElement("pre");
+        body.className = "error-details-body";
+        body.textContent = item.errorDetails;
+
+        details.append(summary, body);
+        status.appendChild(details);
+      }
 
       meta.append(name, status);
 
@@ -144,6 +165,7 @@ export function initDropZone(
         name: fileNameFromPath(path),
         status: "idle",
         errorMessage: "",
+        errorDetails: "",
       });
     }
 
@@ -196,13 +218,6 @@ export function initDropZone(
     void openPicker();
   });
 
-  zone.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      void openPicker();
-    }
-  });
-
   browse.addEventListener("click", (event) => {
     event.stopPropagation();
     void openPicker();
@@ -226,17 +241,19 @@ export function initDropZone(
 
   return {
     getQueue: () => queue.map(({ path, name }) => ({ path, name })),
-    setItemStatus: (path, status, errorMessage = "") => {
+    setItemStatus: (path, status, errorMessage = "", errorDetails = "") => {
       const item = queue.find((entry) => entry.path === path);
       if (!item) return;
       item.status = status;
       item.errorMessage = errorMessage;
+      item.errorDetails = errorDetails;
       renderQueue();
     },
     resetStatuses: () => {
       for (const item of queue) {
         item.status = "idle";
         item.errorMessage = "";
+        item.errorDetails = "";
       }
       renderQueue();
     },

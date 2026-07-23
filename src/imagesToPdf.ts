@@ -1,6 +1,11 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import {
+  applyHumanizedError,
+  clearHumanizedError,
+  humanizeError,
+} from "./errors";
+import {
   fileNameFromPath,
   isSupportedImagePath,
   type SelectedImage,
@@ -9,18 +14,7 @@ import { t, type Locale } from "./i18n";
 
 type QueueItem = SelectedImage;
 
-function mapError(locale: Locale, code: unknown): string {
-  switch (code) {
-    case "missing_imagemagick":
-      return t(locale, "convertMissingMagick");
-    case "missing_ghostscript":
-      return t(locale, "pdfMissingGhostscript");
-    case "spawn_failed":
-      return t(locale, "convertSpawnFailed");
-    default:
-      return t(locale, "imagesToPdfFailed");
-  }
-}
+type PlainErrorKey = "dropUnsupported" | "dropNoneAdded" | "dropSomeUnsupported";
 
 export type ImagesToPdfController = {
   refreshCopy: (locale: Locale) => void;
@@ -42,15 +36,28 @@ export function initImagesToPdf(
 
   let queue: QueueItem[] = [];
   let busy = false;
+  let lastRawError: unknown = null;
+  let plainErrorKey: PlainErrorKey | null = null;
 
-  const showError = (message: string) => {
-    errorEl.textContent = message;
+  const showPlainError = (key: PlainErrorKey) => {
+    lastRawError = null;
+    plainErrorKey = key;
+    clearHumanizedError(errorEl);
+    errorEl.textContent = t(getLocale(), key);
     errorEl.hidden = false;
   };
 
+  const showInvokeError = (error: unknown, locale: Locale) => {
+    plainErrorKey = null;
+    lastRawError = error;
+    const humanized = humanizeError(locale, error, "imagesToPdfFailed");
+    applyHumanizedError(errorEl, locale, humanized);
+  };
+
   const clearError = () => {
-    errorEl.textContent = "";
-    errorEl.hidden = true;
+    lastRawError = null;
+    plainErrorKey = null;
+    clearHumanizedError(errorEl);
   };
 
   const syncEnabled = () => {
@@ -154,17 +161,12 @@ export function initImagesToPdf(
     }
 
     if (added.length === 0) {
-      showError(
-        t(
-          getLocale(),
-          rejected > 0 ? "dropUnsupported" : "dropNoneAdded",
-        ),
-      );
+      showPlainError(rejected > 0 ? "dropUnsupported" : "dropNoneAdded");
       return;
     }
 
     if (rejected > 0) {
-      showError(t(getLocale(), "dropSomeUnsupported"));
+      showPlainError("dropSomeUnsupported");
     }
 
     queue = [...queue, ...added];
@@ -222,6 +224,7 @@ export function initImagesToPdf(
       convertButton.classList.add("is-busy");
       statusEl.hidden = false;
       statusEl.classList.remove("is-error", "is-success");
+      statusEl.replaceChildren();
       statusEl.textContent = t(locale, "imagesToPdfProgress");
       renderQueue();
 
@@ -233,10 +236,11 @@ export function initImagesToPdf(
         statusEl.classList.add("is-success");
         statusEl.textContent = t(locale, "imagesToPdfSuccess");
       } catch (error) {
-        const message = mapError(locale, error);
+        const humanized = humanizeError(locale, error, "imagesToPdfFailed");
         statusEl.classList.add("is-error");
-        statusEl.textContent = message;
-        showError(message);
+        statusEl.replaceChildren();
+        statusEl.textContent = humanized.message;
+        showInvokeError(error, locale);
       } finally {
         busy = false;
         convertButton.classList.remove("is-busy");
@@ -249,10 +253,26 @@ export function initImagesToPdf(
   statusEl.hidden = true;
 
   return {
-    refreshCopy: () => {
+    refreshCopy: (locale) => {
       renderQueue();
       if (!statusEl.hidden && convertButton.classList.contains("is-busy")) {
-        statusEl.textContent = t(getLocale(), "imagesToPdfProgress");
+        statusEl.replaceChildren();
+        statusEl.textContent = t(locale, "imagesToPdfProgress");
+      }
+      if (plainErrorKey) {
+        errorEl.textContent = t(locale, plainErrorKey);
+        errorEl.hidden = false;
+      } else if (lastRawError != null) {
+        const humanized = humanizeError(
+          locale,
+          lastRawError,
+          "imagesToPdfFailed",
+        );
+        applyHumanizedError(errorEl, locale, humanized);
+        if (!statusEl.hidden && statusEl.classList.contains("is-error")) {
+          statusEl.replaceChildren();
+          statusEl.textContent = humanized.message;
+        }
       }
     },
   };

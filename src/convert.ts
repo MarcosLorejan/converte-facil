@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { QueueItemStatus } from "./dropzone";
+import {
+  applyHumanizedError,
+  humanizeError,
+  type HumanizedError,
+} from "./errors";
 import { extensionForFormat, type OutputFormatId } from "./formats";
 import { fileNameFromPath, type SelectedImage } from "./images";
 import { t, type Locale } from "./i18n";
@@ -33,14 +38,22 @@ function uniqueFileName(
   return candidate;
 }
 
-function mapConvertError(locale: Locale, code: unknown): string {
-  const key =
-    code === "missing_imagemagick"
-      ? "convertMissingMagick"
-      : code === "spawn_failed"
-        ? "convertSpawnFailed"
-        : "convertFailed";
-  return t(locale, key);
+function showStatusMessage(el: HTMLElement, message: string): void {
+  el.replaceChildren();
+  el.textContent = message;
+}
+
+function showStatusWithOptionalDetails(
+  el: HTMLElement,
+  locale: Locale,
+  summary: string,
+  details?: string,
+): void {
+  if (!details) {
+    showStatusMessage(el, summary);
+    return;
+  }
+  applyHumanizedError(el, locale, { message: summary, details });
 }
 
 export type ConvertUi = {
@@ -61,7 +74,7 @@ export function initConvertControls(): ConvertUi | null {
     button.classList.toggle("is-busy", busy);
     status.hidden = !busy;
     if (busy) {
-      status.textContent = button.dataset.progressText ?? "";
+      showStatusMessage(status, button.dataset.progressText ?? "");
     }
   };
 
@@ -75,7 +88,7 @@ export function initConvertControls(): ConvertUi | null {
   const refreshCopy = (locale: Locale) => {
     button.dataset.progressText = t(locale, "convertProgress");
     if (!status.hidden && button.classList.contains("is-busy")) {
-      status.textContent = t(locale, "convertProgress");
+      showStatusMessage(status, t(locale, "convertProgress"));
     }
   };
 
@@ -94,6 +107,7 @@ export async function runBatchConversion(options: {
     path: string,
     status: QueueItemStatus,
     errorMessage?: string,
+    errorDetails?: string,
   ) => void;
   resetStatuses: () => void;
 }): Promise<void> {
@@ -117,13 +131,13 @@ export async function runBatchConversion(options: {
   ui.setBusy(true);
   ui.status.hidden = false;
   ui.status.classList.remove("is-error", "is-success");
-  ui.status.textContent = t(locale, "convertProgress");
+  showStatusMessage(ui.status, t(locale, "convertProgress"));
 
   const ext = extensionForFormat(format);
   const usedNames = new Set<string>();
   let successCount = 0;
   let failCount = 0;
-  let lastError = "";
+  let lastHumanized: HumanizedError | null = null;
 
   try {
     for (const item of queue) {
@@ -139,9 +153,14 @@ export async function runBatchConversion(options: {
         setItemStatus(item.path, "success");
         successCount += 1;
       } catch (error) {
-        const message = mapConvertError(locale, error);
-        lastError = message;
-        setItemStatus(item.path, "error", message);
+        const humanized = humanizeError(locale, error, "convertFailed");
+        lastHumanized = humanized;
+        setItemStatus(
+          item.path,
+          "error",
+          humanized.message,
+          humanized.details,
+        );
         failCount += 1;
       }
     }
@@ -149,14 +168,27 @@ export async function runBatchConversion(options: {
     ui.status.classList.remove("is-error", "is-success");
     if (failCount === 0) {
       ui.status.classList.add("is-success");
-      ui.status.textContent = t(locale, "convertSuccess");
+      showStatusMessage(ui.status, t(locale, "convertSuccess"));
     } else if (successCount === 0) {
       ui.status.classList.add("is-error");
-      ui.status.textContent =
-        queue.length === 1 ? lastError : t(locale, "convertAllFailed");
+      const summary =
+        queue.length === 1 && lastHumanized
+          ? lastHumanized.message
+          : t(locale, "convertAllFailed");
+      showStatusWithOptionalDetails(
+        ui.status,
+        locale,
+        summary,
+        lastHumanized?.details,
+      );
     } else {
       ui.status.classList.add("is-error");
-      ui.status.textContent = t(locale, "convertPartial");
+      showStatusWithOptionalDetails(
+        ui.status,
+        locale,
+        t(locale, "convertPartial"),
+        lastHumanized?.details,
+      );
     }
   } finally {
     ui.button.classList.remove("is-busy");

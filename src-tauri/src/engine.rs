@@ -214,8 +214,51 @@ fn prepare_command(program: &str) -> Command {
     command
 }
 
+/// Stable error code, optionally followed by a newline and technical detail
+/// (Magick/Ghostscript stderr) for the UI Details disclosure.
+fn tool_error(code: &str, stderr: &[u8], stdout: &[u8]) -> String {
+    let detail = tool_output_detail(stderr, stdout);
+    if detail.is_empty() {
+        code.to_string()
+    } else {
+        format!("{code}\n{detail}")
+    }
+}
+
+fn tool_output_detail(stderr: &[u8], stdout: &[u8]) -> String {
+    let err = String::from_utf8_lossy(stderr);
+    let out = String::from_utf8_lossy(stdout);
+    let mut parts = Vec::new();
+    let err_trim = err.trim();
+    let out_trim = out.trim();
+    if !err_trim.is_empty() {
+        parts.push(err_trim);
+    }
+    if !out_trim.is_empty() {
+        parts.push(out_trim);
+    }
+    let joined = parts.join("\n");
+    const MAX_CHARS: usize = 2500;
+    let count = joined.chars().count();
+    if count > MAX_CHARS {
+        let truncated: String = joined.chars().take(MAX_CHARS).collect();
+        format!("{truncated}…")
+    } else {
+        joined
+    }
+}
+
+fn classify_pdf_tool_failure(stderr: &str) -> &'static str {
+    let lower = stderr.to_lowercase();
+    if lower.contains("ghostscript") || lower.contains("delegate") {
+        "missing_ghostscript"
+    } else {
+        "convert_failed"
+    }
+}
+
 /// Convert `input_path` to `output_path` with ImageMagick.
-/// Returns stable error codes for the UI to translate.
+/// Returns stable error codes (optional technical detail) for the UI to translate.
 pub fn convert_image(input_path: &str, output_path: &str) -> Result<(), String> {
     let imagemagick = detect_engines().imagemagick;
     if !imagemagick.available {
@@ -231,7 +274,11 @@ pub fn convert_image(input_path: &str, output_path: &str) -> Result<(), String> 
     if output.status.success() {
         Ok(())
     } else {
-        Err("convert_failed".into())
+        Err(tool_error(
+            "convert_failed",
+            &output.stderr,
+            &output.stdout,
+        ))
     }
 }
 
@@ -280,11 +327,9 @@ pub fn convert_pdf_to_images(
         .map_err(|_| "spawn_failed".to_string())?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
-        if stderr.contains("ghostscript") || stderr.contains("delegate") {
-            return Err("missing_ghostscript".into());
-        }
-        return Err("convert_failed".into());
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let code = classify_pdf_tool_failure(&stderr);
+        return Err(tool_error(code, &output.stderr, &output.stdout));
     }
 
     let after = page_file_names(output_dir, ext);
@@ -320,11 +365,9 @@ pub fn combine_images_to_pdf(input_paths: &[String], output_path: &str) -> Resul
     if output.status.success() {
         Ok(())
     } else {
-        let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
-        if stderr.contains("ghostscript") || stderr.contains("delegate") {
-            return Err("missing_ghostscript".into());
-        }
-        Err("convert_failed".into())
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let code = classify_pdf_tool_failure(&stderr);
+        Err(tool_error(code, &output.stderr, &output.stdout))
     }
 }
 
@@ -348,10 +391,42 @@ fn page_file_names(output_dir: &str, ext: &str) -> std::collections::HashSet<Str
 
 #[cfg(test)]
 mod tests {
-    use super::first_line;
+    use super::{classify_pdf_tool_failure, first_line, tool_error, tool_output_detail};
 
     #[test]
     fn first_line_skips_blanks() {
         assert_eq!(first_line("\n\nHello\nWorld"), Some("Hello".into()));
+    }
+
+    #[test]
+    fn tool_error_code_only_when_empty_output() {
+        assert_eq!(tool_error("convert_failed", b"", b""), "convert_failed");
+    }
+
+    #[test]
+    fn tool_error_appends_stderr_detail() {
+        let err = tool_error("convert_failed", b"no decode delegate\n", b"");
+        assert!(err.starts_with("convert_failed\n"));
+        assert!(err.contains("no decode delegate"));
+    }
+
+    #[test]
+    fn tool_output_detail_truncates_long_text() {
+        let long = "x".repeat(3000);
+        let detail = tool_output_detail(long.as_bytes(), b"");
+        assert!(detail.chars().count() <= 2501);
+        assert!(detail.ends_with('…'));
+    }
+
+    #[test]
+    fn classify_detects_ghostscript_delegate() {
+        assert_eq!(
+            classify_pdf_tool_failure("Delegate failed: ghostscript"),
+            "missing_ghostscript"
+        );
+        assert_eq!(
+            classify_pdf_tool_failure("unable to open image"),
+            "convert_failed"
+        );
     }
 }
