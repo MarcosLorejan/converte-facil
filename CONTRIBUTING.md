@@ -3,6 +3,8 @@
 Repo docs, code, issues, and PRs are written in **English**.  
 The **app UI** must support English and Portuguese (i18n).
 
+By participating, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Issues
 
 **One issue per PR.** Branch naming:
