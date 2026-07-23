@@ -26,45 +26,86 @@
           Your files stay on your computer. Nothing is uploaded to the internet.
         </p>
 
-        <section class="drop-section" aria-labelledby="drop-title">
-          <h2 id="drop-title" data-i18n="dropTitle">Add photos</h2>
-
-          <div
-            id="drop-zone"
-            class="drop-zone"
-            role="button"
-            tabindex="0"
-            aria-describedby="drop-hint"
+        <div
+          id="mode-switch"
+          class="mode-switch"
+          role="tablist"
+          aria-label="What do you want to convert?"
+        >
+          <button
+            type="button"
+            id="mode-images"
+            class="mode-option"
+            role="tab"
+            aria-controls="panel-images"
+            aria-selected="true"
+            data-i18n="modeImages"
           >
-            <p id="drop-hint" class="drop-hint" data-i18n="dropHint">
-              Drop images here, or click to choose files
-            </p>
-            <button type="button" id="drop-browse" class="drop-browse" data-i18n="dropBrowse">
-              Choose files
-            </button>
-          </div>
-
-          <p id="drop-error" class="drop-error" role="alert" hidden></p>
-
-          <div id="queue" class="queue" hidden>
-            <p class="queue-heading" data-i18n="selectedLabel">Selected files</p>
-            <ul id="queue-list" class="queue-list" aria-live="polite"></ul>
-          </div>
-        </section>
-
-        <section id="format-picker" class="format-picker is-disabled" aria-labelledby="format-title">
-          <h2 id="format-title" data-i18n="formatTitle">Convert to</h2>
-          <p class="format-help" data-i18n="formatHelp">
-            Choose an output format after adding photos.
-          </p>
-          <div id="format-list" class="format-list" role="group" aria-labelledby="format-title"></div>
-        </section>
-
-        <div class="convert-actions">
-          <button type="button" id="convert-button" class="convert-button" disabled data-i18n="convertButton">
-            Convert and save
+            Images
           </button>
-          <p id="convert-status" class="convert-status" role="status" hidden></p>
+          <button
+            type="button"
+            id="mode-pdf"
+            class="mode-option"
+            role="tab"
+            aria-controls="panel-pdf"
+            aria-selected="false"
+            data-i18n="modePdf"
+          >
+            PDF
+          </button>
+        </div>
+
+        <div id="panel-images" class="mode-panel" role="tabpanel" aria-labelledby="mode-images">
+          <section class="drop-section" aria-labelledby="drop-title">
+            <h2 id="drop-title" data-i18n="dropTitle">Add photos</h2>
+
+            <div
+              id="drop-zone"
+              class="drop-zone"
+              role="button"
+              tabindex="0"
+              aria-describedby="drop-hint"
+            >
+              <p id="drop-hint" class="drop-hint" data-i18n="dropHint">
+                Drop images here, or click to choose files
+              </p>
+              <button type="button" id="drop-browse" class="drop-browse" data-i18n="dropBrowse">
+                Choose files
+              </button>
+            </div>
+
+            <p id="drop-error" class="drop-error" role="alert" hidden></p>
+
+            <div id="queue" class="queue" hidden>
+              <p class="queue-heading" data-i18n="selectedLabel">Selected files</p>
+              <ul id="queue-list" class="queue-list" aria-live="polite"></ul>
+            </div>
+          </section>
+
+          <section id="format-picker" class="format-picker is-disabled" aria-labelledby="format-title">
+            <h2 id="format-title" data-i18n="formatTitle">Convert to</h2>
+            <p class="format-help" data-i18n="formatHelp">
+              Choose an output format after adding photos.
+            </p>
+            <div id="format-list" class="format-list" role="group" aria-labelledby="format-title"></div>
+          </section>
+
+          <div class="convert-actions">
+            <button type="button" id="convert-button" class="convert-button" disabled data-i18n="convertButton">
+              Convert and save
+            </button>
+            <p id="convert-status" class="convert-status" role="status" hidden></p>
+          </div>
+        </div>
+
+        <div id="panel-pdf" class="mode-panel" role="tabpanel" aria-labelledby="mode-pdf" hidden>
+          <section class="pdf-placeholder" aria-labelledby="pdf-title">
+            <h2 id="pdf-title" data-i18n="pdfTitle">PDF tools</h2>
+            <p class="pdf-help" data-i18n="pdfHelp">
+              PDF conversion is next. Switch back to Images anytime.
+            </p>
+          </section>
         </div>
 
         <section class="engines" aria-live="polite">
