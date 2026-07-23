@@ -10,6 +10,7 @@
 #
 # Requires network access. ImageMagick portable archives are .7z — this script
 # uses 7-Zip if installed, otherwise downloads the small 7zr.exe helper once.
+# Downloaded Magick/GS archives are verified against pinned SHA256 digests.
 
 [CmdletBinding()]
 param(
@@ -21,6 +22,10 @@ $ErrorActionPreference = "Stop"
 $ImageMagickVersion = "7.1.2-27"
 $GhostscriptVersion = "10.05.1"
 $GhostscriptTag = "gs10051"
+
+# SHA256 of the remote archives (not the extracted trees). Update when bumping versions.
+$ImageMagickSha256 = "C7D6F13B3021DB5D2E23876D85F06D6039A9A345236F0D32CDB73886DDFE70ED"
+$GhostscriptSha256 = "A0E49D912D21D8193FF0CB89EF741A47B21286FBB0A0E35DD0192B0097D35766"
 
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $MagickDir = Join-Path $RepoRoot "src-tauri\sidecars\imagemagick"
@@ -37,6 +42,23 @@ New-Item -ItemType Directory -Force -Path $MagickDir, $GsDir, $TempRoot, $ToolsD
 
 function Write-Info([string]$Message) {
   Write-Host $Message
+}
+
+function Assert-FileSha256([string]$Path, [string]$ExpectedSha256, [string]$Label) {
+  $actual = (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToUpperInvariant()
+  $expected = $ExpectedSha256.ToUpperInvariant()
+  if ($actual -ne $expected) {
+    throw @"
+SHA256 mismatch for $Label.
+  Expected: $expected
+  Actual:   $actual
+  File:     $Path
+
+Refuse to unpack. If you intentionally bumped the download URL/version, update the
+pinned digest in scripts/fetch-sidecars.ps1 and document it in docs/sidecars.md.
+"@
+  }
+  Write-Info "SHA256 OK for $Label"
 }
 
 function Test-MagickPresent {
@@ -111,6 +133,7 @@ if ((Test-MagickPresent) -and -not $Force) {
   if (Test-Path $magickExtract) { Remove-Item -Recurse -Force $magickExtract }
 
   Invoke-WebRequest -Uri $MagickUrl -OutFile $magickArchive
+  Assert-FileSha256 $magickArchive $ImageMagickSha256 "ImageMagick $ImageMagickVersion archive"
   Expand-SevenZip $magickArchive $magickExtract
 
   Clear-DirContents $MagickDir
@@ -139,6 +162,7 @@ if ((Test-GhostscriptPresent) -and -not $Force) {
   if (Test-Path $gsExtract) { Remove-Item -Recurse -Force $gsExtract }
 
   Invoke-WebRequest -Uri $GsUrl -OutFile $gsInstaller
+  Assert-FileSha256 $gsInstaller $GhostscriptSha256 "Ghostscript $GhostscriptVersion installer"
 
   # Unpack the Windows installer payload with full 7za (NSIS). Avoids UAC.
   try {
