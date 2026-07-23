@@ -76,6 +76,10 @@ Documents mode needs **LibreOffice** installed on your PC (it is not inside the 
 
 That removes the app, the Start menu entry, and the desktop shortcut.
 
+## Open-source components (PDF)
+
+PDF conversion uses **Ghostscript**, which is free software under the **GNU AGPL v3**. The official Windows installer may include Ghostscript. Source code for the Ghostscript version we ship is available from Artifex (see [third-party/NOTICE](../third-party/NOTICE) and [docs/sidecars.md](sidecars.md) in the project repository).
+
 ## Need help?
 
 - Files stay on your computer — nothing is uploaded.

@@ -76,6 +76,10 @@ O modo Documentos precisa do **LibreOffice** instalado no PC (ele não vem dentr
 
 Isso remove o app, o atalho do menu Iniciar e o atalho da área de trabalho.
 
+## Componentes de código aberto (PDF)
+
+A conversão de PDF usa o **Ghostscript**, software livre sob a **GNU AGPL v3**. O instalador oficial para Windows pode incluir o Ghostscript. O código-fonte da versão do Ghostscript que distribuímos está disponível pela Artifex (veja [third-party/NOTICE](../third-party/NOTICE) e [docs/sidecars.md](sidecars.md) no repositório do projeto).
+
 ## Precisa de ajuda?
 
 - Os arquivos ficam no seu computador — nada é enviado para a internet.

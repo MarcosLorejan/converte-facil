@@ -1,8 +1,12 @@
 # Converte Fácil
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A **local, installable** desktop app to convert images and PDFs without uploading files to the internet.
 
 Built so anyone can use it — large UI, clear steps, and language options (English / Portuguese).
+
+**License:** [MIT](LICENSE) for the Converte Fácil application code. Bundled ImageMagick and Ghostscript remain under their own licenses — see [third-party/NOTICE](third-party/NOTICE).
 
 ## Install guide (end users)
 
@@ -58,8 +62,19 @@ The app prefers binaries under `src-tauri/sidecars/` over PATH. To populate them
 
 Details, version pins, and license notes: [docs/sidecars.md](docs/sidecars.md) · [third-party/NOTICE](third-party/NOTICE)
 
+**Licenses:** ImageMagick and Ghostscript remain under their own terms. Ghostscript is **AGPL v3**; Windows builds that bundle it must offer corresponding source for the pinned Ghostscript version (documented in NOTICE / sidecars.md). The Converte Fácil app code is separate from those engines.
+
 ## Tracking
 
 See [milestones](../../milestones) and [issues](../../issues) for the full plan.
 
 Usability sessions (non-technical users): [docs/usability-test.md](docs/usability-test.md).
+
+## Community
+
+- [Contributing](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+
+## Security
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md). Do not file public issues for security reports.

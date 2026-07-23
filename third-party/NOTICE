@@ -1,5 +1,8 @@
 Third-party software bundled with Converte Fácil (Windows builds)
 
+This file summarizes redistribution obligations for engines shipped with the
+Windows installer. Full license texts live alongside this NOTICE.
+
 ================================================================================
 ImageMagick
 ================================================================================
@@ -8,16 +11,46 @@ License: see IMAGEMAGICK-LICENSE.txt (ImageMagick License / Apache License 2.0 f
 Notes: Converte Fácil invokes the `magick` CLI. On Windows we never ship or call
        the legacy `convert` name (conflicts with System32\convert.exe).
 
+Pinned Windows build (see scripts/fetch-sidecars.ps1):
+  ImageMagick 7.1.2-27 portable Q16-HDRI x64
+  Upstream: https://github.com/ImageMagick/ImageMagick/releases/tag/7.1.2-27
+
 ================================================================================
-Ghostscript
+Ghostscript (AGPL)
 ================================================================================
 Project: https://www.ghostscript.com/
 License: see GHOSTSCRIPT-LICENSE.txt (GNU Affero General Public License v3)
-Notes: Used for PDF reading/writing via ImageMagick delegates (`gswin64c` on
-       Windows). Distributing Ghostscript with this application requires
-       compliance with the AGPL (including corresponding source offers where
-       applicable). Prefer linking to Artifex's official source archives for the
-       exact version pinned in scripts/fetch-sidecars.ps1.
+
+Pinned Windows build (see scripts/fetch-sidecars.ps1):
+  Ghostscript 10.05.1 (tag gs10051), Windows x64
+  Binary we unpack: gs10051w64.exe from Artifex downloads
+  Upstream release: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs10051
+
+Redistribution (summary — AGPL v3 controls):
+  - Windows installs of Converte Fácil may include Ghostscript binaries under
+    the app resources (`sidecars/ghostscript/`).
+  - Ghostscript remains AGPL-licensed software. Recipients of the installer are
+    entitled to the corresponding source for that Ghostscript version.
+  - Corresponding source for the pinned release is offered by Artifex at the
+    release page above (GhostPDL / Ghostscript source archives for 10.05.1).
+    If that page moves, use the version pin in scripts/fetch-sidecars.ps1 to
+    locate the matching Artifex source tarball.
+  - Converte Fácil does not modify Ghostscript; it runs `gswin64c` as a separate
+    process (via ImageMagick PDF delegates). The Converte Fácil application
+    source is not part of the Ghostscript program.
+
+If you redistribute Converte Fácil builds that include Ghostscript, you must
+also respect AGPL obligations for that component (including offering
+corresponding source for the Ghostscript version you ship).
 
 ================================================================================
-The Converte Fácil application code itself is separate from these components.
+LibreOffice (not bundled)
+================================================================================
+Documents mode expects a system install of LibreOffice (`soffice`). We do not
+ship LibreOffice binaries in the Windows installer. See docs/adr/0002-libreoffice-bundling.md.
+
+================================================================================
+Converte Fácil application code
+================================================================================
+The Converte Fácil application code itself is separate from these components
+and is licensed under the MIT License — see LICENSE at the repository root.
