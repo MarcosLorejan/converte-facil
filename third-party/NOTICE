@@ -20,4 +20,5 @@ Notes: Used for PDF reading/writing via ImageMagick delegates (`gswin64c` on
        exact version pinned in scripts/fetch-sidecars.ps1.
 
 ================================================================================
-The Converte Fácil application code itself is separate from these components.
+The Converte Fácil application code itself is separate from these components
+and is licensed under the MIT License — see LICENSE at the repository root.
