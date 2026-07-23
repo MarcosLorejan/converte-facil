@@ -60,6 +60,8 @@ The app prefers binaries under `src-tauri/sidecars/` over PATH. To populate them
 
 Details, version pins, and license notes: [docs/sidecars.md](docs/sidecars.md) · [third-party/NOTICE](third-party/NOTICE)
 
+**Licenses:** ImageMagick and Ghostscript remain under their own terms. Ghostscript is **AGPL v3**; Windows builds that bundle it must offer corresponding source for the pinned Ghostscript version (documented in NOTICE / sidecars.md). The Converte Fácil app code is separate from those engines.
+
 ## Tracking
 
 See [milestones](../../milestones) and [issues](../../issues) for the full plan.
