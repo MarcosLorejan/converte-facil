@@ -13,6 +13,7 @@ import {
 import type { OutputFormatId } from "./formats";
 import type { SelectedImage } from "./images";
 import { initModeSwitch } from "./modeSwitch";
+import { initPdfToImages } from "./pdfToImages";
 
 type ToolStatus = {
   available: boolean;
@@ -84,6 +85,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   const convertUi = initConvertControls();
   const modeSwitch = initModeSwitch();
+  const pdfToImages = initPdfToImages(() => locale);
 
   const syncConvertEnabled = () => {
     convertUi?.setEnabled(queue.length > 0 && selectedFormat !== null);
@@ -123,6 +125,7 @@ window.addEventListener("DOMContentLoaded", () => {
     dropZone?.refreshCopy(next);
     formatPicker?.refreshCopy(next);
     convertUi?.refreshCopy(next);
+    pdfToImages?.refreshCopy(next);
     if (select) {
       select.value = next;
     }

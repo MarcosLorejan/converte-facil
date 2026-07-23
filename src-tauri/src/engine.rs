@@ -88,6 +88,84 @@ pub fn convert_image(input_path: &str, output_path: &str) -> Result<(), String> 
     }
 }
 
+/// Convert each PDF page into an image file in `output_dir`.
+/// Writes `page-001.ext`, `page-002.ext`, … (1-based).
+/// `format` must be `png` or `jpg`.
+pub fn convert_pdf_to_images(
+    input_path: &str,
+    output_dir: &str,
+    format: &str,
+) -> Result<u32, String> {
+    let ext = match format {
+        "png" | "jpg" => format,
+        _ => return Err("invalid_format".into()),
+    };
+
+    let engines = detect_engines();
+    if !engines.imagemagick.available {
+        return Err("missing_imagemagick".into());
+    }
+    if !engines.ghostscript.available {
+        return Err("missing_ghostscript".into());
+    }
+
+    let before = page_file_names(output_dir, ext);
+    let pattern = std::path::Path::new(output_dir)
+        .join(format!("page-%03d.{ext}"))
+        .to_string_lossy()
+        .into_owned();
+
+    let mut command = Command::new(&engines.imagemagick.name);
+    command
+        .arg("-density")
+        .arg("150")
+        .arg(input_path)
+        .arg("-scene")
+        .arg("1");
+
+    if ext == "jpg" {
+        command.arg("-quality").arg("90");
+    }
+
+    let output = command
+        .arg(&pattern)
+        .output()
+        .map_err(|_| "spawn_failed".to_string())?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
+        if stderr.contains("ghostscript") || stderr.contains("delegate") {
+            return Err("missing_ghostscript".into());
+        }
+        return Err("convert_failed".into());
+    }
+
+    let after = page_file_names(output_dir, ext);
+    let page_count = after.difference(&before).count() as u32;
+    if page_count == 0 {
+        return Err("convert_failed".into());
+    }
+    Ok(page_count)
+}
+
+fn page_file_names(output_dir: &str, ext: &str) -> std::collections::HashSet<String> {
+    let Ok(entries) = std::fs::read_dir(output_dir) else {
+        return std::collections::HashSet::new();
+    };
+
+    entries
+        .flatten()
+        .filter_map(|entry| {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if name.starts_with("page-") && name.ends_with(&format!(".{ext}")) {
+                Some(name)
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::first_line;
