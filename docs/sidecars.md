@@ -44,11 +44,17 @@ When a bundled Magick is used, its directory (and the bundled Ghostscript direct
 2. Confirm the official download still matches:
    - ImageMagick: GitHub Releases portable **Q16-HDRI x64** `.7z` (not the legacy `convert` name)
    - Ghostscript: Artifex Windows x64 installer (`gsNNNNw64.exe`)
-3. Run `.\scripts\fetch-sidecars.ps1 -Force` (needs network). Magick uses `7zr.exe`; Ghostscript’s NSIS installer is unpacked with full `7z.exe` obtained via `msiexec /a` of the 7-Zip MSI (no UAC install of Ghostscript itself).
-4. Spot-check: `.\src-tauri\sidecars\imagemagick\magick.exe -version` and `.\src-tauri\sidecars\ghostscript\gswin64c.exe -version`.
-5. Refresh license copies under `third-party/` if the upstream license text changed.
-6. Commit script/version/docs/license changes (not the binary trees unless you intentionally vendor them).
-7. Run `npm run tauri:build` with sidecars present and smoke-convert an image and a PDF.
+3. Download once (or run the script until the hash check fails), then pin the archive digests:
+   ```powershell
+   Get-FileHash $env:TEMP\converte-facil-sidecars\imagemagick.7z -Algorithm SHA256
+   Get-FileHash $env:TEMP\converte-facil-sidecars\ghostscript-setup.exe -Algorithm SHA256
+   ```
+   Update `$ImageMagickSha256` and `$GhostscriptSha256` in the script to those values.
+4. Run `.\scripts\fetch-sidecars.ps1 -Force` (needs network). Magick uses `7zr.exe`; Ghostscript’s NSIS installer is unpacked with full `7z.exe` obtained via `msiexec /a` of the 7-Zip MSI (no UAC install of Ghostscript itself). A SHA256 mismatch aborts before unpack.
+5. Spot-check: `.\src-tauri\sidecars\imagemagick\magick.exe -version` and `.\src-tauri\sidecars\ghostscript\gswin64c.exe -version`.
+6. Refresh license copies under `third-party/` if the upstream license text changed.
+7. Commit script/version/docs/license changes (not the binary trees unless you intentionally vendor them).
+8. Run `npm run tauri:build` with sidecars present and smoke-convert an image and a PDF.
 
 **CI note:** cache `src-tauri/sidecars/**` after `npm run sidecars:fetch`, or restore pre-fetched artifacts. Do not commit the large `.exe`/`.dll` trees by default.
 

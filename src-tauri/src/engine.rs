@@ -36,6 +36,59 @@ fn first_line(stdout: &str) -> Option<String> {
         .map(str::to_string)
 }
 
+/// Reject empty paths and Magick/CLI flag-like path segments (e.g. `-resize`).
+fn path_looks_unsafe(path: &str) -> bool {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return true;
+    }
+
+    let normalized = trimmed.trim_start_matches(r"\\?\");
+    Path::new(normalized).components().any(|component| {
+        let raw = component.as_os_str().to_string_lossy();
+        raw.starts_with('-')
+    })
+}
+
+fn validate_absolute_path(path: &str) -> Result<&Path, String> {
+    if path_looks_unsafe(path) {
+        return Err("invalid_path".into());
+    }
+    let p = Path::new(path);
+    if !p.is_absolute() {
+        return Err("invalid_path".into());
+    }
+    Ok(p)
+}
+
+fn validate_existing_file(path: &str) -> Result<&Path, String> {
+    let p = validate_absolute_path(path)?;
+    if !p.is_file() {
+        return Err("invalid_path".into());
+    }
+    Ok(p)
+}
+
+fn validate_output_file_path(path: &str) -> Result<&Path, String> {
+    let p = validate_absolute_path(path)?;
+    if p
+        .file_name()
+        .map(|name| name.to_string_lossy().starts_with('-'))
+        .unwrap_or(true)
+    {
+        return Err("invalid_path".into());
+    }
+    Ok(p)
+}
+
+fn validate_output_dir(path: &str) -> Result<&Path, String> {
+    let p = validate_absolute_path(path)?;
+    if !p.is_dir() {
+        return Err("invalid_path".into());
+    }
+    Ok(p)
+}
+
 fn probe_binary(path: &Path, args: &[&str]) -> Option<String> {
     match Command::new(path).args(args).output() {
         Ok(output) if output.status.success() => {
@@ -366,6 +419,9 @@ fn classify_pdf_tool_failure(stderr: &str) -> &'static str {
 /// Convert `input_path` to `output_path` with ImageMagick.
 /// Returns stable error codes (optional technical detail) for the UI to translate.
 pub fn convert_image(input_path: &str, output_path: &str) -> Result<(), String> {
+    validate_existing_file(input_path)?;
+    validate_output_file_path(output_path)?;
+
     let imagemagick = detect_engines().imagemagick;
     if !imagemagick.available {
         return Err("missing_imagemagick".into());
@@ -400,6 +456,9 @@ pub fn convert_pdf_to_images(
         "png" | "jpg" => format,
         _ => return Err("invalid_format".into()),
     };
+
+    validate_existing_file(input_path)?;
+    validate_output_dir(output_dir)?;
 
     let engines = detect_engines();
     if !engines.imagemagick.available {
@@ -452,6 +511,11 @@ pub fn combine_images_to_pdf(input_paths: &[String], output_path: &str) -> Resul
     if input_paths.is_empty() {
         return Err("no_inputs".into());
     }
+
+    for path in input_paths {
+        validate_existing_file(path)?;
+    }
+    validate_output_file_path(output_path)?;
 
     let engines = detect_engines();
     if !engines.imagemagick.available {
@@ -540,6 +604,9 @@ pub fn convert_document_to_pdf(input_path: &str, output_path: &str) -> Result<()
         return Err("invalid_format".into());
     }
 
+    validate_existing_file(input_path)?;
+    validate_output_file_path(output_path)?;
+
     let libreoffice = detect_libreoffice();
     if !libreoffice.available {
         return Err("missing_libreoffice".into());
@@ -611,14 +678,37 @@ pub fn convert_document_to_pdf(input_path: &str, output_path: &str) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::{
-        classify_pdf_tool_failure, first_line, is_supported_document, path_to_file_url, tool_error,
-        tool_output_detail,
+        classify_pdf_tool_failure, first_line, is_supported_document, path_looks_unsafe,
+        path_to_file_url, tool_error, tool_output_detail, validate_absolute_path,
+        validate_output_file_path,
     };
     use std::path::Path;
 
     #[test]
     fn first_line_skips_blanks() {
         assert_eq!(first_line("\n\nHello\nWorld"), Some("Hello".into()));
+    }
+
+    #[test]
+    fn rejects_flag_like_and_empty_paths() {
+        assert!(path_looks_unsafe(""));
+        assert!(path_looks_unsafe("   "));
+        assert!(path_looks_unsafe("-resize"));
+        assert!(path_looks_unsafe(r"C:\Users\-evil\photo.png"));
+        assert!(!path_looks_unsafe(r"C:\Users\me\photo.png"));
+        assert!(!path_looks_unsafe(r"\\?\C:\Users\me\photo.png"));
+    }
+
+    #[test]
+    fn validate_absolute_path_requires_absolute() {
+        assert!(validate_absolute_path("photo.png").is_err());
+        assert!(validate_absolute_path(r"C:\Users\me\photo.png").is_ok());
+    }
+
+    #[test]
+    fn validate_output_rejects_missing_file_name() {
+        assert!(validate_output_file_path(r"C:\").is_err());
+        assert!(validate_output_file_path(r"C:\Users\me\out.png").is_ok());
     }
 
     #[test]
