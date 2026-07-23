@@ -48,4 +48,10 @@ export function applyTranslations(locale: Locale, root: ParentNode = document): 
       el.textContent = t(locale, key);
     }
   });
+  root.querySelectorAll<HTMLElement>("[data-i18n-aria]").forEach((el) => {
+    const key = el.dataset.i18nAria as MessageKey | undefined;
+    if (key) {
+      el.setAttribute("aria-label", t(locale, key));
+    }
+  });
 }

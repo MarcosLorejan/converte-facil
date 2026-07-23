@@ -190,6 +190,7 @@ export async function runBatchConversion(options: {
         lastHumanized?.details,
       );
     }
+    ui.status.focus();
   } finally {
     ui.button.classList.remove("is-busy");
     ui.button.disabled = ui.button.dataset.ready !== "true";

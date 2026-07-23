@@ -50,6 +50,23 @@ export function initModeSwitch(
 
   let mode = getSavedMode();
 
+  const tabFor = (next: AppMode) => (next === "images" ? imagesBtn : pdfBtn);
+  const panelFor = (next: AppMode) => (next === "images" ? imagesPanel : pdfPanel);
+
+  const syncRovingTabIndex = () => {
+    imagesBtn.tabIndex = mode === "images" ? 0 : -1;
+    pdfBtn.tabIndex = mode === "pdf" ? 0 : -1;
+  };
+
+  const moveFocusOutOfHiddenPanel = (next: AppMode) => {
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement)) return;
+    const hiddenPanel = panelFor(next === "images" ? "pdf" : "images");
+    if (hiddenPanel.contains(active)) {
+      tabFor(next).focus();
+    }
+  };
+
   const applyMode = (next: AppMode, persist: boolean) => {
     mode = next;
     if (persist) {
@@ -63,6 +80,8 @@ export function initModeSwitch(
 
     imagesPanel.hidden = next !== "images";
     pdfPanel.hidden = next !== "pdf";
+    syncRovingTabIndex();
+    moveFocusOutOfHiddenPanel(next);
 
     onChange?.(next);
   };
@@ -77,6 +96,33 @@ export function initModeSwitch(
     if (mode !== "pdf") {
       applyMode("pdf", true);
     }
+  });
+
+  root.addEventListener("keydown", (event) => {
+    if (
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight" &&
+      event.key !== "Home" &&
+      event.key !== "End"
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    let next: AppMode = mode;
+    if (event.key === "Home") {
+      next = "images";
+    } else if (event.key === "End") {
+      next = "pdf";
+    } else {
+      next = mode === "images" ? "pdf" : "images";
+    }
+
+    if (next !== mode) {
+      applyMode(next, true);
+    }
+    tabFor(next).focus();
   });
 
   const refreshCopy = (locale: Locale) => {

@@ -235,11 +235,13 @@ export function initImagesToPdf(
         });
         statusEl.classList.add("is-success");
         statusEl.textContent = t(locale, "imagesToPdfSuccess");
+        statusEl.focus();
       } catch (error) {
         const humanized = humanizeError(locale, error, "imagesToPdfFailed");
         statusEl.classList.add("is-error");
         statusEl.replaceChildren();
         statusEl.textContent = humanized.message;
+        statusEl.focus();
         showInvokeError(error, locale);
       } finally {
         busy = false;
