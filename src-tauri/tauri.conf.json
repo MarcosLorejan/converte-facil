@@ -32,7 +32,7 @@
     "active": true,
     "targets": ["nsis"],
     "publisher": "Converte Facil",
-    "copyright": "Copyright © Converte Facil",
+    "copyright": "Copyright © 2026 MarcosLorejan",
     "shortDescription": "Convert images and PDFs on your computer",
     "longDescription": "Converte Facil converts images and PDFs locally. Files never leave your computer.",
     "category": "Utility",

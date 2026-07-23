@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a new feature or enhancement
+title: "feat: "
+labels: ["type:feat"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. One issue per PR once work starts — see [CONTRIBUTING.md](https://github.com/MarcosLorejan/converte-facil/blob/main/CONTRIBUTING.md).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What user problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should it work in the app (keep it simple for non-technical users)?
+    validations:
+      required: true
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: Checklist of acceptance criteria.
+      placeholder: |
+        - [ ] …
+    validations:
+      required: false
+  - type: checkboxes
+    id: i18n
+    attributes:
+      label: i18n
+      options:
+        - label: UI strings need English + Portuguese
+          required: false

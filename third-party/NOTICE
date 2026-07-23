@@ -52,6 +52,5 @@ ship LibreOffice binaries in the Windows installer. See docs/adr/0002-libreoffic
 ================================================================================
 Converte Fácil application code
 ================================================================================
-The Converte Fácil application code itself is separate from the components
-above. See LICENSE at the repository root (MIT) once published; until then the
-source in this repository remains the source of truth for the app.
+The Converte Fácil application code itself is separate from these components
+and is licensed under the MIT License — see LICENSE at the repository root.
