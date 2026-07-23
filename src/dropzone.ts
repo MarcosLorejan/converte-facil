@@ -8,18 +8,29 @@ import {
 } from "./images";
 import { t, type Locale } from "./i18n";
 
+export type QueueItemStatus = "idle" | "converting" | "success" | "error";
+
+type QueueItem = SelectedImage & {
+  status: QueueItemStatus;
+  errorMessage: string;
+};
+
 type DropZoneUi = {
   zone: HTMLElement;
   browse: HTMLButtonElement;
-  clear: HTMLButtonElement;
   error: HTMLElement;
-  selection: HTMLElement;
-  preview: HTMLImageElement;
-  name: HTMLElement;
+  queueRoot: HTMLElement;
+  list: HTMLElement;
 };
 
 export type DropZoneController = {
-  getSelection: () => SelectedImage | null;
+  getQueue: () => SelectedImage[];
+  setItemStatus: (
+    path: string,
+    status: QueueItemStatus,
+    errorMessage?: string,
+  ) => void;
+  resetStatuses: () => void;
   refreshCopy: (locale: Locale) => void;
 };
 
@@ -33,70 +44,134 @@ function clearError(ui: DropZoneUi) {
   ui.error.hidden = true;
 }
 
-function renderSelection(ui: DropZoneUi, selected: SelectedImage | null) {
-  if (!selected) {
-    ui.selection.hidden = true;
-    ui.preview.removeAttribute("src");
-    ui.name.textContent = "";
-    ui.zone.classList.remove("has-file");
-    return;
+function statusLabel(locale: Locale, item: QueueItem): string {
+  switch (item.status) {
+    case "converting":
+      return t(locale, "queueStatusConverting");
+    case "success":
+      return t(locale, "queueStatusSuccess");
+    case "error":
+      return item.errorMessage || t(locale, "queueStatusFailed");
+    default:
+      return "";
   }
-
-  ui.selection.hidden = false;
-  ui.zone.classList.add("has-file");
-  ui.name.textContent = selected.name;
-  ui.preview.alt = selected.name;
-  ui.preview.src = convertFileSrc(selected.path);
 }
 
 export function initDropZone(
   getLocale: () => Locale,
-  onChange?: (selected: SelectedImage | null) => void,
+  onChange?: (queue: SelectedImage[]) => void,
 ): DropZoneController | null {
   const zone = document.querySelector<HTMLElement>("#drop-zone");
   const browse = document.querySelector<HTMLButtonElement>("#drop-browse");
-  const clear = document.querySelector<HTMLButtonElement>("#drop-clear");
   const error = document.querySelector<HTMLElement>("#drop-error");
-  const selection = document.querySelector<HTMLElement>("#selection");
-  const preview = document.querySelector<HTMLImageElement>("#selection-preview");
-  const name = document.querySelector<HTMLElement>("#selection-name");
+  const queueRoot = document.querySelector<HTMLElement>("#queue");
+  const list = document.querySelector<HTMLElement>("#queue-list");
 
-  if (!zone || !browse || !clear || !error || !selection || !preview || !name) {
+  if (!zone || !browse || !error || !queueRoot || !list) {
     return null;
   }
 
-  const ui: DropZoneUi = { zone, browse, clear, error, selection, preview, name };
-  let selected: SelectedImage | null = null;
+  const ui: DropZoneUi = { zone, browse, error, queueRoot, list };
+  let queue: QueueItem[] = [];
 
-  const setSelected = (next: SelectedImage | null) => {
-    selected = next;
-    renderSelection(ui, next);
-    onChange?.(next);
+  const emitChange = () => {
+    onChange?.(queue.map(({ path, name }) => ({ path, name })));
+  };
+
+  const renderQueue = () => {
+    const locale = getLocale();
+    list.replaceChildren();
+    queueRoot.hidden = queue.length === 0;
+    zone.classList.toggle("has-file", queue.length > 0);
+
+    for (const item of queue) {
+      const row = document.createElement("li");
+      row.className = `queue-item is-${item.status}`;
+      row.dataset.path = item.path;
+
+      const preview = document.createElement("img");
+      preview.className = "queue-preview";
+      preview.alt = item.name;
+      preview.src = convertFileSrc(item.path);
+
+      const meta = document.createElement("div");
+      meta.className = "queue-meta";
+
+      const name = document.createElement("p");
+      name.className = "queue-name";
+      name.textContent = item.name;
+
+      const status = document.createElement("p");
+      status.className = "queue-status";
+      status.textContent = statusLabel(locale, item);
+      status.hidden = item.status === "idle";
+
+      meta.append(name, status);
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "queue-remove";
+      remove.textContent = t(locale, "dropClear");
+      remove.addEventListener("click", () => {
+        clearError(ui);
+        queue = queue.filter((entry) => entry.path !== item.path);
+        renderQueue();
+        emitChange();
+      });
+
+      row.append(preview, meta, remove);
+      list.appendChild(row);
+    }
   };
 
   const acceptPaths = (paths: string[]) => {
     clearError(ui);
     if (paths.length === 0) return;
 
-    if (paths.length > 1) {
-      showError(ui, t(getLocale(), "dropMulti"));
+    const existing = new Set(queue.map((item) => item.path));
+    const added: QueueItem[] = [];
+    let rejected = 0;
+
+    for (const path of paths) {
+      if (!isSupportedImagePath(path)) {
+        rejected += 1;
+        continue;
+      }
+      if (existing.has(path)) continue;
+      existing.add(path);
+      added.push({
+        path,
+        name: fileNameFromPath(path),
+        status: "idle",
+        errorMessage: "",
+      });
+    }
+
+    if (added.length === 0) {
+      showError(
+        ui,
+        t(
+          getLocale(),
+          rejected > 0 ? "dropUnsupported" : "dropNoneAdded",
+        ),
+      );
       return;
     }
 
-    const path = paths[0];
-    if (!isSupportedImagePath(path)) {
-      showError(ui, t(getLocale(), "dropUnsupported"));
-      return;
+    if (rejected > 0) {
+      showError(ui, t(getLocale(), "dropSomeUnsupported"));
     }
 
-    setSelected({ path, name: fileNameFromPath(path) });
+    queue = [...queue, ...added];
+    renderQueue();
+    emitChange();
   };
 
   const openPicker = async () => {
     clearError(ui);
     try {
       const result = await open({
-        multiple: false,
+        multiple: true,
         directory: false,
         filters: [
           {
@@ -107,8 +182,8 @@ export function initDropZone(
       });
 
       if (result === null) return;
-      const path = typeof result === "string" ? result : result[0];
-      if (path) acceptPaths([path]);
+      const paths = typeof result === "string" ? [result] : result;
+      acceptPaths(paths);
     } catch {
       // Dialog cancelled or unavailable — leave UI unchanged
     }
@@ -133,11 +208,6 @@ export function initDropZone(
     void openPicker();
   });
 
-  clear.addEventListener("click", () => {
-    clearError(ui);
-    setSelected(null);
-  });
-
   void getCurrentWebview()
     .onDragDropEvent((event) => {
       if (event.payload.type === "over") {
@@ -155,21 +225,35 @@ export function initDropZone(
     });
 
   return {
-    getSelection: () => selected,
+    getQueue: () => queue.map(({ path, name }) => ({ path, name })),
+    setItemStatus: (path, status, errorMessage = "") => {
+      const item = queue.find((entry) => entry.path === path);
+      if (!item) return;
+      item.status = status;
+      item.errorMessage = errorMessage;
+      renderQueue();
+    },
+    resetStatuses: () => {
+      for (const item of queue) {
+        item.status = "idle";
+        item.errorMessage = "";
+      }
+      renderQueue();
+    },
     refreshCopy: (locale) => {
-      if (!error.hidden && selected === null) {
-        // Keep generic unsupported/multi messages in sync with language
+      renderQueue();
+      if (!error.hidden) {
         const text = error.textContent ?? "";
-        if (
-          text === t("en", "dropUnsupported") ||
-          text === t("pt-BR", "dropUnsupported")
-        ) {
-          showError(ui, t(locale, "dropUnsupported"));
-        } else if (
-          text === t("en", "dropMulti") ||
-          text === t("pt-BR", "dropMulti")
-        ) {
-          showError(ui, t(locale, "dropMulti"));
+        const keys = [
+          "dropUnsupported",
+          "dropSomeUnsupported",
+          "dropNoneAdded",
+        ] as const;
+        for (const key of keys) {
+          if (text === t("en", key) || text === t("pt-BR", key)) {
+            showError(ui, t(locale, key));
+            break;
+          }
         }
       }
     },

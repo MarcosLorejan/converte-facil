@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { initConvertControls, runConversion } from "./convert";
+import { initConvertControls, runBatchConversion } from "./convert";
 import { initDropZone } from "./dropzone";
 import { initFormatPicker } from "./formatPicker";
 import {
@@ -78,13 +78,13 @@ async function refreshEngines(locale: Locale) {
 window.addEventListener("DOMContentLoaded", () => {
   const select = document.querySelector<HTMLSelectElement>("#lang-select");
   let locale: Locale = getSavedLocale();
-  let selectedImage: SelectedImage | null = null;
+  let queue: SelectedImage[] = [];
   let selectedFormat: OutputFormatId | null = null;
 
   const convertUi = initConvertControls();
 
   const syncConvertEnabled = () => {
-    convertUi?.setEnabled(selectedImage !== null && selectedFormat !== null);
+    convertUi?.setEnabled(queue.length > 0 && selectedFormat !== null);
   };
 
   const formatPicker = initFormatPicker((format) => {
@@ -92,22 +92,24 @@ window.addEventListener("DOMContentLoaded", () => {
     syncConvertEnabled();
   });
 
-  const dropZone = initDropZone(() => locale, (selected) => {
-    selectedImage = selected;
-    formatPicker?.setEnabled(selected !== null);
-    if (!selected) {
+  const dropZone = initDropZone(() => locale, (next) => {
+    queue = next;
+    formatPicker?.setEnabled(next.length > 0);
+    if (next.length === 0) {
       selectedFormat = null;
     }
     syncConvertEnabled();
   });
 
   convertUi?.button.addEventListener("click", () => {
-    if (!convertUi || !selectedImage || !selectedFormat) return;
-    void runConversion({
+    if (!convertUi || !dropZone || queue.length === 0 || !selectedFormat) return;
+    void runBatchConversion({
       locale,
-      selected: selectedImage,
+      queue,
       format: selectedFormat,
       ui: convertUi,
+      setItemStatus: dropZone.setItemStatus,
+      resetStatuses: dropZone.resetStatuses,
     });
   });
 
