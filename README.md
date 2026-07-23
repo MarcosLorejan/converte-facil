@@ -63,3 +63,5 @@ Details, version pins, and license notes: [docs/sidecars.md](docs/sidecars.md) Â
 ## Tracking
 
 See [milestones](../../milestones) and [issues](../../issues) for the full plan.
+
+Usability sessions (non-technical users): [docs/usability-test.md](docs/usability-test.md).
