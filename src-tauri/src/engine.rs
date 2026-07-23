@@ -67,6 +67,27 @@ pub fn detect_engines() -> EngineStatus {
     }
 }
 
+/// Convert `input_path` to `output_path` with ImageMagick.
+/// Returns stable error codes for the UI to translate.
+pub fn convert_image(input_path: &str, output_path: &str) -> Result<(), String> {
+    let imagemagick = detect_engines().imagemagick;
+    if !imagemagick.available {
+        return Err("missing_imagemagick".into());
+    }
+
+    let output = Command::new(&imagemagick.name)
+        .arg(input_path)
+        .arg(output_path)
+        .output()
+        .map_err(|_| "spawn_failed".to_string())?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err("convert_failed".into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::first_line;

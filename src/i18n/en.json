@@ -3,7 +3,6 @@
   "brand": "Converte Fácil",
   "headline": "Convert files on your computer",
   "privacy": "Your files stay on your computer. Nothing is uploaded to the internet.",
-  "comingSoon": "Conversion starts in the next update. Pick a format to get ready.",
   "enginesTitle": "Tools on this computer",
   "statusChecking": "Checking…",
   "statusReady": "Ready",
@@ -27,5 +26,11 @@
   "formatWebp": "WEBP",
   "formatGif": "GIF",
   "formatTiff": "TIFF",
-  "formatBmp": "BMP"
+  "formatBmp": "BMP",
+  "convertButton": "Convert and save",
+  "convertProgress": "Converting… please wait.",
+  "convertSuccess": "Done! Your file was saved.",
+  "convertFailed": "Could not convert this file. Try another image or format.",
+  "convertMissingMagick": "ImageMagick was not found. Install it or wait for the bundled installer.",
+  "convertSpawnFailed": "Could not start ImageMagick. Check that it is installed correctly."
 }
