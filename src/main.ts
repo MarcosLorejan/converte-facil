@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { initDropZone } from "./dropzone";
+import { initFormatPicker } from "./formatPicker";
 import {
   applyTranslations,
   getSavedLocale,
@@ -75,13 +76,17 @@ window.addEventListener("DOMContentLoaded", () => {
   const select = document.querySelector<HTMLSelectElement>("#lang-select");
   let locale: Locale = getSavedLocale();
 
-  const dropZone = initDropZone(() => locale);
+  const formatPicker = initFormatPicker();
+  const dropZone = initDropZone(() => locale, (selected) => {
+    formatPicker?.setEnabled(selected !== null);
+  });
 
   const setLocale = (next: Locale) => {
     locale = next;
     saveLocale(next);
     applyTranslations(next);
     dropZone?.refreshCopy(next);
+    formatPicker?.refreshCopy(next);
     if (select) {
       select.value = next;
     }

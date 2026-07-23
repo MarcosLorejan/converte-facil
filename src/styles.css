@@ -208,6 +208,60 @@ h1 {
   word-break: break-all;
 }
 
+.format-picker {
+  margin: 0 0 1.25rem;
+}
+
+.format-picker.is-disabled {
+  opacity: 0.55;
+}
+
+.format-picker h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.format-help {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.format-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.format-option {
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  min-width: 4.5rem;
+  padding: 0.7rem 0.95rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.format-option:disabled {
+  cursor: not-allowed;
+}
+
+.format-option.is-selected {
+  border-color: var(--brand);
+  background: rgba(15, 107, 92, 0.14);
+  color: var(--brand);
+}
+
+.format-option:not(:disabled):hover {
+  border-color: rgba(15, 107, 92, 0.45);
+}
+
 .hint {
   margin: 0 0 1.5rem;
   padding: 0.9rem 1rem;
