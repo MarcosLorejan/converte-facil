@@ -171,16 +171,19 @@ export function initPdfToImages(
       statusEl.textContent = t(locale, "pdfConvertProgress");
 
       try {
-        const pageCount = await invoke<number>("convert_pdf_to_images", {
+        const result = await invoke<{
+          pageCount: number;
+          outputDir: string;
+        }>("convert_pdf_to_images", {
           inputPath: pdfPath,
           outputDir,
           format,
         });
+        const folderName = fileNameFromPath(result.outputDir);
         statusEl.classList.add("is-success");
-        statusEl.textContent = t(locale, "pdfConvertSuccess").replace(
-          "{count}",
-          String(pageCount),
-        );
+        statusEl.textContent = t(locale, "pdfConvertSuccess")
+          .replace("{count}", String(result.pageCount))
+          .replace("{folder}", folderName);
         statusEl.focus();
       } catch (error) {
         const humanized = humanizeError(locale, error, "pdfConvertFailed");
