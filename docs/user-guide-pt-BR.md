@@ -33,7 +33,7 @@ O app é instalado para o seu usuário do Windows (em geral sem senha de adminis
 
 Se quiser, mude o **Idioma** (English / Português) no topo da janela.
 
-> **Espaço para captura de tela:** tela principal com seletor de idioma e botões Imagens / PDF  
+> **Espaço para captura de tela:** tela principal com seletor de idioma e botões Imagens / PDF / Documentos  
 > `docs/images/pt-03-principal.png`
 
 ## 4. Converter o primeiro arquivo (imagens)
@@ -56,6 +56,18 @@ Se quiser, mude o **Idioma** (English / Português) no topo da janela.
 
 > **Espaço para captura de tela:** painel do modo PDF  
 > `docs/images/pt-05-pdf.png`
+
+## 6. Converter Word ou Excel em PDF (opcional)
+
+O modo Documentos precisa do **LibreOffice** instalado no PC (ele não vem dentro do instalador do Converte Fácil).
+
+1. Clique em **Documentos**.
+2. Se o app disser que o LibreOffice não foi encontrado, use o link de download, instale o LibreOffice pelo site oficial e clique em **Verificar de novo**.
+3. Escolha um arquivo **Word (`.docx`)** ou **Excel (`.xlsx`)**.
+4. Clique em **Converter e salvar**, escolha a pasta e aguarde o PDF.
+
+> **Espaço para captura de tela:** modo Documentos + guia do LibreOffice  
+> `docs/images/pt-06-documentos.png`
 
 ## Desinstalar
 

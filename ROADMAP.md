@@ -6,14 +6,17 @@ An installable Windows app, 100% local, simple enough for non-technical users to
 
 ## Phases
 
-| Milestone | Goal | Done when |
-|-----------|------|-----------|
-| M1 — Foundation | Repo, stack, empty app window | App opens with welcome screen |
-| M2 — Images | Image format conversion | Drag photo → pick format → save result |
-| M3 — PDF | PDF ↔ image | PDF → PNG/JPG; images → PDF |
-| M4 — Installer | Windows `.exe` + Magick/Ghostscript | Clean PC install converts without a terminal |
-| M5 — Documents | Word/etc. via LibreOffice | `.docx` → PDF in one click |
-| M6 — UX polish | Copy, errors, a11y, i18n | Non-technical user succeeds without help |
+| Milestone | Goal | Status |
+|-----------|------|--------|
+| M1 — Foundation | Repo, stack, empty app window | Done |
+| M2 — Images | Image format conversion | Done |
+| M3 — PDF | PDF ↔ image | Done |
+| M4 — Installer | Windows `.exe` + Magick/Ghostscript | Done |
+| M5 — Documents | Word/Excel → PDF via LibreOffice | Done |
+| M6 — UX polish | Copy, errors, a11y, i18n | Done |
+| [M7 — Ship & compliance](https://github.com/MarcosLorejan/converte-facil/milestone/7) | LICENSE, AGPL notes, first Release, docs sync | In progress |
+| [M8 — Hardening & quality](https://github.com/MarcosLorejan/converte-facil/milestone/8) | CSP, path validation, CI/tests, overwrite fixes | Open |
+| [M9 — UX & formats](https://github.com/MarcosLorejan/converte-facil/milestone/9) | HEIC, cancel, open folder, drag-drop parity | Open |
 
 ## UX principles
 

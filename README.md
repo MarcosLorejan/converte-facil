@@ -13,21 +13,19 @@ Built so anyone can use it — large UI, clear steps, and language options (Engl
 - **English:** [Install Converte Fácil](docs/user-guide-en.md) — download → install → convert your first file  
 - **Português:** [Instalar o Converte Fácil](docs/user-guide-pt-BR.md) — baixar → instalar → converter o primeiro arquivo
 
-## What it does (v1)
+## What it does
 
 - Convert images (JPG, PNG, WEBP, GIF, TIFF, BMP, …)
 - Convert PDF ↔ image (via Ghostscript)
+- Word (`.docx`) / Excel (`.xlsx`) → PDF via a local LibreOffice install
 - Everything runs offline on your machine
-
-## Later (v2)
-
-- Word/Excel → PDF via local LibreOffice
 
 ## Tech base
 
 - Desktop UI: **Tauri 2** + Vite + TypeScript (see [ADR 0001](docs/adr/0001-desktop-stack.md))
 - Engine: [ImageMagick](https://github.com/ImageMagick/ImageMagick)
 - PDF: Ghostscript
+- Documents: system [LibreOffice](https://www.libreoffice.org/) (`soffice`) — not bundled in the installer (see [ADR 0002](docs/adr/0002-libreoffice-bundling.md))
 - Initial target: Windows installable `.exe`
 - UI i18n: English + Portuguese (see [docs/i18n.md](docs/i18n.md))
 
