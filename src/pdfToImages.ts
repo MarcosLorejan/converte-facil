@@ -181,11 +181,13 @@ export function initPdfToImages(
           "{count}",
           String(pageCount),
         );
+        statusEl.focus();
       } catch (error) {
         const humanized = humanizeError(locale, error, "pdfConvertFailed");
         statusEl.classList.add("is-error");
         statusEl.replaceChildren();
         statusEl.textContent = humanized.message;
+        statusEl.focus();
         showInvokeError(error, locale);
       } finally {
         busy = false;
