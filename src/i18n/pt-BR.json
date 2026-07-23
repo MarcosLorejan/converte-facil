@@ -3,7 +3,6 @@
   "brand": "Converte Fácil",
   "headline": "Converta arquivos no seu computador",
   "privacy": "Seus arquivos ficam no seu computador. Nada é enviado para a internet.",
-  "comingSoon": "A conversão começa na próxima atualização. Escolha um formato para se preparar.",
   "enginesTitle": "Ferramentas neste computador",
   "statusChecking": "Verificando…",
   "statusReady": "Pronto",
@@ -27,5 +26,11 @@
   "formatWebp": "WEBP",
   "formatGif": "GIF",
   "formatTiff": "TIFF",
-  "formatBmp": "BMP"
+  "formatBmp": "BMP",
+  "convertButton": "Converter e salvar",
+  "convertProgress": "Convertendo… aguarde.",
+  "convertSuccess": "Pronto! Seu arquivo foi salvo.",
+  "convertFailed": "Não foi possível converter este arquivo. Tente outra imagem ou formato.",
+  "convertMissingMagick": "ImageMagick não foi encontrado. Instale ou aguarde o instalador completo.",
+  "convertSpawnFailed": "Não foi possível iniciar o ImageMagick. Verifique se está instalado corretamente."
 }

@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { initConvertControls, runConversion } from "./convert";
 import { initDropZone } from "./dropzone";
 import { initFormatPicker } from "./formatPicker";
 import {
@@ -9,6 +10,8 @@ import {
   t,
   type Locale,
 } from "./i18n";
+import type { OutputFormatId } from "./formats";
+import type { SelectedImage } from "./images";
 
 type ToolStatus = {
   available: boolean;
@@ -75,10 +78,37 @@ async function refreshEngines(locale: Locale) {
 window.addEventListener("DOMContentLoaded", () => {
   const select = document.querySelector<HTMLSelectElement>("#lang-select");
   let locale: Locale = getSavedLocale();
+  let selectedImage: SelectedImage | null = null;
+  let selectedFormat: OutputFormatId | null = null;
 
-  const formatPicker = initFormatPicker();
+  const convertUi = initConvertControls();
+
+  const syncConvertEnabled = () => {
+    convertUi?.setEnabled(selectedImage !== null && selectedFormat !== null);
+  };
+
+  const formatPicker = initFormatPicker((format) => {
+    selectedFormat = format;
+    syncConvertEnabled();
+  });
+
   const dropZone = initDropZone(() => locale, (selected) => {
+    selectedImage = selected;
     formatPicker?.setEnabled(selected !== null);
+    if (!selected) {
+      selectedFormat = null;
+    }
+    syncConvertEnabled();
+  });
+
+  convertUi?.button.addEventListener("click", () => {
+    if (!convertUi || !selectedImage || !selectedFormat) return;
+    void runConversion({
+      locale,
+      selected: selectedImage,
+      format: selectedFormat,
+      ui: convertUi,
+    });
   });
 
   const setLocale = (next: Locale) => {
@@ -87,6 +117,7 @@ window.addEventListener("DOMContentLoaded", () => {
     applyTranslations(next);
     dropZone?.refreshCopy(next);
     formatPicker?.refreshCopy(next);
+    convertUi?.refreshCopy(next);
     if (select) {
       select.value = next;
     }
