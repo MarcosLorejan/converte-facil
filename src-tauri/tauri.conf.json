@@ -10,7 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "withGlobalTauri": true,
+    "withGlobalTauri": false,
     "windows": [
       {
         "title": "Converte Facil",
@@ -21,10 +21,28 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": {
+        "default-src": "'self'",
+        "connect-src": "ipc: http://ipc.localhost",
+        "img-src": "'self' asset: http://asset.localhost blob: data:",
+        "style-src": "'self' 'unsafe-inline'",
+        "script-src": "'self'"
+      },
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": [
+          "$HOME/**",
+          "$TEMP/**",
+          "$DESKTOP/**",
+          "$DOCUMENT/**",
+          "$DOWNLOAD/**",
+          "$PICTURE/**",
+          "$VIDEO/**",
+          "$PUBLIC/**",
+          "$APPDATA/**",
+          "$APPLOCALDATA/**",
+          "$LOCALDATA/**"
+        ]
       }
     }
   },
