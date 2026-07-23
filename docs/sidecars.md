@@ -52,6 +52,20 @@ When a bundled Magick is used, its directory (and the bundled Ghostscript direct
 
 **CI note:** cache `src-tauri/sidecars/**` after `npm run sidecars:fetch`, or restore pre-fetched artifacts. Do not commit the large `.exe`/`.dll` trees by default.
 
-## Attribution
+## Attribution and redistribution
 
-See [`third-party/NOTICE`](../third-party/NOTICE). ImageMagick and Ghostscript are third-party software; their licenses apply to those components.
+See [`third-party/NOTICE`](../third-party/NOTICE) for pinned versions, license
+files, and Ghostscript **AGPL** redistribution notes.
+
+- **ImageMagick** — license text in `third-party/IMAGEMAGICK-LICENSE.txt`
+- **Ghostscript** — AGPL v3 (`third-party/GHOSTSCRIPT-LICENSE.txt`). Windows
+  builds that include `sidecars/ghostscript/` distribute Ghostscript binaries.
+  Corresponding source for the pinned version (**10.05.1** / `gs10051`) is
+  available from Artifex:
+  https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs10051
+- The app invokes Magick/GS as separate processes; it does not vendor their
+  source trees inside the UI crate. Keep NOTICE + license texts with every
+  build that ships those sidecars.
+
+End-user install guides should mention that PDF support uses Ghostscript under
+the AGPL and point readers here or at `third-party/NOTICE`.
