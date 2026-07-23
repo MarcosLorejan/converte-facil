@@ -4,6 +4,11 @@ A **local, installable** desktop app to convert images and PDFs without uploadin
 
 Built so anyone can use it — large UI, clear steps, and language options (English / Portuguese).
 
+## Install guide (end users)
+
+- **English:** [Install Converte Fácil](docs/user-guide-en.md) — download → install → convert your first file  
+- **Português:** [Instalar o Converte Fácil](docs/user-guide-pt-BR.md) — baixar → instalar → converter o primeiro arquivo
+
 ## What it does (v1)
 
 - Convert images (JPG, PNG, WEBP, GIF, TIFF, BMP, …)
