@@ -3,7 +3,7 @@
   "brand": "Converte Fácil",
   "headline": "Converta arquivos no seu computador",
   "privacy": "Seus arquivos ficam no seu computador. Nada é enviado para a internet.",
-  "comingSoon": "As ferramentas de conversão vêm em seguida. Escolha uma foto para começar.",
+  "comingSoon": "A conversão começa na próxima atualização. Escolha um formato para se preparar.",
   "enginesTitle": "Ferramentas neste computador",
   "statusChecking": "Verificando…",
   "statusReady": "Pronto",
@@ -19,5 +19,13 @@
   "dropClear": "Remover",
   "dropUnsupported": "Este tipo de arquivo não é suportado. Tente JPG, PNG, WEBP, GIF, TIFF ou BMP.",
   "dropMulti": "Por enquanto, adicione uma imagem por vez.",
-  "selectedLabel": "Arquivo selecionado"
+  "selectedLabel": "Arquivo selecionado",
+  "formatTitle": "Converter para",
+  "formatHelp": "Escolha o formato de saída depois de adicionar uma foto.",
+  "formatJpg": "JPG",
+  "formatPng": "PNG",
+  "formatWebp": "WEBP",
+  "formatGif": "GIF",
+  "formatTiff": "TIFF",
+  "formatBmp": "BMP"
 }

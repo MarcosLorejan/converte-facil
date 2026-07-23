@@ -3,7 +3,7 @@
   "brand": "Converte Fácil",
   "headline": "Convert files on your computer",
   "privacy": "Your files stay on your computer. Nothing is uploaded to the internet.",
-  "comingSoon": "Conversion tools are coming next. Pick a photo to get started.",
+  "comingSoon": "Conversion starts in the next update. Pick a format to get ready.",
   "enginesTitle": "Tools on this computer",
   "statusChecking": "Checking…",
   "statusReady": "Ready",
@@ -19,5 +19,13 @@
   "dropClear": "Remove",
   "dropUnsupported": "This file type is not supported. Try JPG, PNG, WEBP, GIF, TIFF, or BMP.",
   "dropMulti": "Please add one image at a time for now.",
-  "selectedLabel": "Selected file"
+  "selectedLabel": "Selected file",
+  "formatTitle": "Convert to",
+  "formatHelp": "Choose an output format after adding a photo.",
+  "formatJpg": "JPG",
+  "formatPng": "PNG",
+  "formatWebp": "WEBP",
+  "formatGif": "GIF",
+  "formatTiff": "TIFF",
+  "formatBmp": "BMP"
 }
