@@ -30,6 +30,7 @@ Prerequisites:
 - [Rust](https://rustup.rs/) (MSVC toolchain)
 - [Visual Studio Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the **Desktop development with C++** workload (provides `link.exe`)
 - [WebView2](https://developer.microsoft.com/microsoft-edge/webview2/) (usually already on Windows 10/11)
+- Optional for conversion without a system install: ImageMagick + Ghostscript sidecars (see below)
 
 ```bash
 npm install
@@ -41,6 +42,16 @@ Production build:
 ```bash
 npm run tauri:build
 ```
+
+### Bundled ImageMagick / Ghostscript (Windows)
+
+The app prefers binaries under `src-tauri/sidecars/` over PATH. To populate them before `tauri:build`:
+
+```powershell
+.\scripts\fetch-sidecars.ps1
+```
+
+Details, version pins, and license notes: [docs/sidecars.md](docs/sidecars.md) · [third-party/NOTICE](third-party/NOTICE)
 
 ## Tracking
 

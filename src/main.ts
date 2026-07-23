@@ -20,6 +20,7 @@ type ToolStatus = {
   available: boolean;
   name: string;
   detail: string | null;
+  bundled: boolean;
 };
 
 type EngineStatus = {
@@ -32,6 +33,7 @@ function renderTool(
   rootId: string,
   status: ToolStatus,
   tipKey: "imagemagickTip" | "ghostscriptTip",
+  bundledTipKey: "imagemagickBundledTip" | "ghostscriptBundledTip",
 ) {
   const root = document.querySelector<HTMLElement>(`#${rootId}`);
   if (!root) return;
@@ -57,8 +59,16 @@ function renderTool(
   }
 
   if (tip) {
-    tip.textContent = t(locale, tipKey);
-    tip.hidden = status.available;
+    if (status.available && status.bundled) {
+      tip.textContent = t(locale, bundledTipKey);
+      tip.hidden = false;
+    } else if (!status.available) {
+      tip.textContent = t(locale, tipKey);
+      tip.hidden = false;
+    } else {
+      tip.textContent = "";
+      tip.hidden = true;
+    }
   }
 }
 
@@ -68,8 +78,20 @@ async function refreshEngines(locale: Locale) {
 
   try {
     const status = await invoke<EngineStatus>("get_engine_status");
-    renderTool(locale, "engine-imagemagick", status.imagemagick, "imagemagickTip");
-    renderTool(locale, "engine-ghostscript", status.ghostscript, "ghostscriptTip");
+    renderTool(
+      locale,
+      "engine-imagemagick",
+      status.imagemagick,
+      "imagemagickTip",
+      "imagemagickBundledTip",
+    );
+    renderTool(
+      locale,
+      "engine-ghostscript",
+      status.ghostscript,
+      "ghostscriptTip",
+      "ghostscriptBundledTip",
+    );
   } catch {
     if (errorEl) {
       errorEl.textContent = t(locale, "enginesError");

@@ -25,3 +25,11 @@ dist-ssr
 
 # Tauri / Rust
 src-tauri/target
+
+# Bundled engine binaries (fetched via scripts/fetch-sidecars.ps1)
+src-tauri/sidecars/imagemagick/**
+!src-tauri/sidecars/imagemagick/README.md
+!src-tauri/sidecars/imagemagick/.gitkeep
+src-tauri/sidecars/ghostscript/**
+!src-tauri/sidecars/ghostscript/README.md
+!src-tauri/sidecars/ghostscript/.gitkeep
