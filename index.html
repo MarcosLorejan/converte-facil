@@ -151,6 +151,46 @@
               <p id="pdf-convert-status" class="convert-status" role="status" hidden></p>
             </div>
           </section>
+
+          <hr class="pdf-divider" />
+
+          <section class="images-to-pdf" aria-labelledby="images-to-pdf-title">
+            <h2 id="images-to-pdf-title" data-i18n="imagesToPdfTitle">Turn photos into a PDF</h2>
+            <p class="pdf-help" data-i18n="imagesToPdfHelp">
+              Add photos, set the page order, then save one PDF on your computer.
+            </p>
+
+            <div class="pdf-pick-row">
+              <button
+                type="button"
+                id="images-to-pdf-pick"
+                class="drop-browse"
+                data-i18n="imagesToPdfPickButton"
+              >
+                Choose photos
+              </button>
+            </div>
+
+            <p id="images-to-pdf-error" class="drop-error" role="alert" hidden></p>
+
+            <div id="images-to-pdf-queue" class="queue" hidden>
+              <p class="queue-heading" data-i18n="imagesToPdfSelectedLabel">Pages (top = first)</p>
+              <ul id="images-to-pdf-list" class="queue-list" aria-live="polite"></ul>
+            </div>
+
+            <div class="convert-actions">
+              <button
+                type="button"
+                id="images-to-pdf-convert"
+                class="convert-button"
+                disabled
+                data-i18n="imagesToPdfConvertButton"
+              >
+                Save PDF
+              </button>
+              <p id="images-to-pdf-status" class="convert-status" role="status" hidden></p>
+            </div>
+          </section>
         </div>
 
         <section class="engines" aria-live="polite">
