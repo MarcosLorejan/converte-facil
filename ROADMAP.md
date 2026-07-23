@@ -14,7 +14,7 @@ An installable Windows app, 100% local, simple enough for non-technical users to
 | M4 — Installer | Windows `.exe` + Magick/Ghostscript | Done |
 | M5 — Documents | Word/Excel → PDF via LibreOffice | Done |
 | M6 — UX polish | Copy, errors, a11y, i18n | Done |
-| [M7 — Ship & compliance](https://github.com/MarcosLorejan/converte-facil/milestone/7) | LICENSE, AGPL notes, first Release, docs sync | In progress |
+| [M7 — Ship & compliance](https://github.com/MarcosLorejan/converte-facil/milestone/7) | LICENSE, AGPL notes, first Release, docs sync | Done |
 | [M8 — Hardening & quality](https://github.com/MarcosLorejan/converte-facil/milestone/8) | CSP, path validation, CI/tests, overwrite fixes | Open |
 | [M9 — UX & formats](https://github.com/MarcosLorejan/converte-facil/milestone/9) | HEIC, cancel, open folder, drag-drop parity | Open |
 
