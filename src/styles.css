@@ -272,6 +272,40 @@ h1 {
   font-size: 0.95rem;
 }
 
+.drop-error .error-message,
+.convert-status .error-message,
+.queue-status-text {
+  margin: 0;
+}
+
+.error-details {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.error-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #8a3b1c;
+}
+
+.error-details-body {
+  margin: 0.45rem 0 0;
+  padding: 0.65rem 0.75rem;
+  max-height: 10rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--ink);
+  background: rgba(28, 43, 40, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
 .queue {
   margin-top: 0.9rem;
 }
@@ -325,6 +359,11 @@ h1 {
   margin: 0.25rem 0 0;
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+.queue-status-text {
+  font-size: inherit;
+  color: inherit;
 }
 
 .queue-item.is-success .queue-status {
