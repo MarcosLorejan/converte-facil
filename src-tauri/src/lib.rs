@@ -1,6 +1,7 @@
 mod engine;
 
 use engine::EngineStatus;
+use tauri::Manager;
 
 #[tauri::command]
 fn get_engine_status() -> EngineStatus {
@@ -31,6 +32,12 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            if let Ok(resource_dir) = app.path().resource_dir() {
+                engine::set_resource_dir(resource_dir);
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_engine_status,
             convert_image,

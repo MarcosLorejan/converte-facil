@@ -1,0 +1,23 @@
+Third-party software bundled with Converte Fácil (Windows builds)
+
+================================================================================
+ImageMagick
+================================================================================
+Project: https://imagemagick.org/
+License: see IMAGEMAGICK-LICENSE.txt (ImageMagick License / Apache License 2.0 for current releases)
+Notes: Converte Fácil invokes the `magick` CLI. On Windows we never ship or call
+       the legacy `convert` name (conflicts with System32\convert.exe).
+
+================================================================================
+Ghostscript
+================================================================================
+Project: https://www.ghostscript.com/
+License: see GHOSTSCRIPT-LICENSE.txt (GNU Affero General Public License v3)
+Notes: Used for PDF reading/writing via ImageMagick delegates (`gswin64c` on
+       Windows). Distributing Ghostscript with this application requires
+       compliance with the AGPL (including corresponding source offers where
+       applicable). Prefer linking to Artifex's official source archives for the
+       exact version pinned in scripts/fetch-sidecars.ps1.
+
+================================================================================
+The Converte Fácil application code itself is separate from these components.
