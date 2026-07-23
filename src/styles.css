@@ -104,6 +104,54 @@ h1 {
   max-width: 28rem;
 }
 
+.mode-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 0 0 1.35rem;
+}
+
+.mode-option {
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  flex: 1 1 8rem;
+  min-height: 3.1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.mode-option:hover {
+  border-color: rgba(15, 107, 92, 0.45);
+}
+
+.mode-option.is-selected {
+  border-color: var(--brand);
+  background: rgba(15, 107, 92, 0.14);
+  color: var(--brand);
+}
+
+.mode-panel {
+  margin: 0 0 1.5rem;
+}
+
+.pdf-placeholder h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.pdf-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+  max-width: 28rem;
+}
+
 .drop-section {
   margin: 0 0 1.25rem;
 }

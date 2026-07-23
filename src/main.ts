@@ -12,6 +12,7 @@ import {
 } from "./i18n";
 import type { OutputFormatId } from "./formats";
 import type { SelectedImage } from "./images";
+import { initModeSwitch } from "./modeSwitch";
 
 type ToolStatus = {
   available: boolean;
@@ -82,6 +83,7 @@ window.addEventListener("DOMContentLoaded", () => {
   let selectedFormat: OutputFormatId | null = null;
 
   const convertUi = initConvertControls();
+  const modeSwitch = initModeSwitch();
 
   const syncConvertEnabled = () => {
     convertUi?.setEnabled(queue.length > 0 && selectedFormat !== null);
@@ -117,6 +119,7 @@ window.addEventListener("DOMContentLoaded", () => {
     locale = next;
     saveLocale(next);
     applyTranslations(next);
+    modeSwitch?.refreshCopy(next);
     dropZone?.refreshCopy(next);
     formatPicker?.refreshCopy(next);
     convertUi?.refreshCopy(next);
