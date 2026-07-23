@@ -1,8 +1,12 @@
 # Converte Fácil
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A **local, installable** desktop app to convert images and PDFs without uploading files to the internet.
 
 Built so anyone can use it — large UI, clear steps, and language options (English / Portuguese).
+
+**License:** [MIT](LICENSE) for the Converte Fácil application code. Bundled ImageMagick and Ghostscript remain under their own licenses — see [third-party/NOTICE](third-party/NOTICE).
 
 ## Install guide (end users)
 
@@ -70,3 +74,7 @@ Usability sessions (non-technical users): [docs/usability-test.md](docs/usabilit
 
 - [Contributing](CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
+
+## Security
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md). Do not file public issues for security reports.
