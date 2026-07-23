@@ -139,17 +139,36 @@ h1 {
   margin: 0 0 1.5rem;
 }
 
-.pdf-placeholder h2 {
+.pdf-placeholder h2,
+.pdf-to-images h2 {
   margin: 0 0 0.5rem;
   font-size: 1.1rem;
   font-weight: 600;
 }
 
 .pdf-help {
-  margin: 0;
+  margin: 0 0 1rem;
   color: var(--muted);
   font-size: 1.05rem;
   max-width: 28rem;
+}
+
+.pdf-pick-row {
+  margin: 0 0 0.75rem;
+}
+
+.pdf-selection {
+  margin: 0.9rem 0 1rem;
+}
+
+.pdf-format-picker {
+  margin: 0 0 1.25rem;
+}
+
+.pdf-format-picker h3 {
+  margin: 0 0 0.65rem;
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 
 .drop-section {
