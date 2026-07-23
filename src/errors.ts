@@ -13,6 +13,8 @@ export type ParsedInvokeError = {
 const CODE_KEYS: Record<string, MessageKey> = {
   missing_imagemagick: "convertMissingMagick",
   missing_ghostscript: "pdfMissingGhostscript",
+  missing_libreoffice: "docsMissingLibreOffice",
+  unsupported_format: "docsUnsupported",
   spawn_failed: "convertSpawnFailed",
   convert_failed: "convertFailed",
   invalid_format: "errorUnsupportedCodec",

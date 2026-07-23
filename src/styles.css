@@ -588,6 +588,42 @@ h1 {
   font-size: 1rem;
 }
 
+.docs-guide {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.docs-guide h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.docs-guide-steps {
+  margin: 0.75rem 0 1rem;
+  padding-left: 1.25rem;
+  color: var(--muted);
+}
+
+.docs-guide-steps li {
+  margin: 0.35rem 0;
+}
+
+.docs-guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.docs-guide-hint {
+  margin: 0.85rem 0 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
 @media (prefers-contrast: more) {
   :root {
     --ink: #0f1917;
