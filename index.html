@@ -27,7 +27,7 @@
         </p>
 
         <section class="drop-section" aria-labelledby="drop-title">
-          <h2 id="drop-title" data-i18n="dropTitle">Add a photo</h2>
+          <h2 id="drop-title" data-i18n="dropTitle">Add photos</h2>
 
           <div
             id="drop-zone"
@@ -37,31 +37,25 @@
             aria-describedby="drop-hint"
           >
             <p id="drop-hint" class="drop-hint" data-i18n="dropHint">
-              Drop an image here, or click to choose a file
+              Drop images here, or click to choose files
             </p>
             <button type="button" id="drop-browse" class="drop-browse" data-i18n="dropBrowse">
-              Choose file
+              Choose files
             </button>
           </div>
 
           <p id="drop-error" class="drop-error" role="alert" hidden></p>
 
-          <div id="selection" class="selection" hidden>
-            <img id="selection-preview" class="selection-preview" alt="" />
-            <div class="selection-meta">
-              <p class="selection-label" data-i18n="selectedLabel">Selected file</p>
-              <p id="selection-name" class="selection-name"></p>
-              <button type="button" id="drop-clear" class="drop-clear" data-i18n="dropClear">
-                Remove
-              </button>
-            </div>
+          <div id="queue" class="queue" hidden>
+            <p class="queue-heading" data-i18n="selectedLabel">Selected files</p>
+            <ul id="queue-list" class="queue-list" aria-live="polite"></ul>
           </div>
         </section>
 
         <section id="format-picker" class="format-picker is-disabled" aria-labelledby="format-title">
           <h2 id="format-title" data-i18n="formatTitle">Convert to</h2>
           <p class="format-help" data-i18n="formatHelp">
-            Choose an output format after adding a photo.
+            Choose an output format after adding photos.
           </p>
           <div id="format-list" class="format-list" role="group" aria-labelledby="format-title"></div>
         </section>
