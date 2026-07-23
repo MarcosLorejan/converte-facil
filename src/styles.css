@@ -171,6 +171,47 @@ h1 {
   font-weight: 600;
 }
 
+.pdf-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.75rem 0;
+}
+
+.images-to-pdf h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+.queue-order {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+}
+
+.queue-order:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.images-to-pdf-item {
+  align-items: flex-start;
+}
+
 .drop-section {
   margin: 0 0 1.25rem;
 }

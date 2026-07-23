@@ -148,6 +148,39 @@ pub fn convert_pdf_to_images(
     Ok(page_count)
 }
 
+/// Combine image files into a single PDF at `output_path`.
+/// Order of `input_paths` is the page order.
+pub fn combine_images_to_pdf(input_paths: &[String], output_path: &str) -> Result<(), String> {
+    if input_paths.is_empty() {
+        return Err("no_inputs".into());
+    }
+
+    let engines = detect_engines();
+    if !engines.imagemagick.available {
+        return Err("missing_imagemagick".into());
+    }
+
+    let mut command = Command::new(&engines.imagemagick.name);
+    for path in input_paths {
+        command.arg(path);
+    }
+    command.arg(output_path);
+
+    let output = command
+        .output()
+        .map_err(|_| "spawn_failed".to_string())?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
+        if stderr.contains("ghostscript") || stderr.contains("delegate") {
+            return Err("missing_ghostscript".into());
+        }
+        Err("convert_failed".into())
+    }
+}
+
 fn page_file_names(output_dir: &str, ext: &str) -> std::collections::HashSet<String> {
     let Ok(entries) = std::fs::read_dir(output_dir) else {
         return std::collections::HashSet::new();
