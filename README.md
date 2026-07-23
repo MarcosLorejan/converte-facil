@@ -1,6 +1,7 @@
 # Converte Fácil
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/MarcosLorejan/converte-facil/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcosLorejan/converte-facil/actions/workflows/ci.yml)
 
 A **local, installable** desktop app to convert images and PDFs without uploading files to the internet.
 
