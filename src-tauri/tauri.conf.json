@@ -30,7 +30,12 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis"],
+    "publisher": "Converte Facil",
+    "copyright": "Copyright © Converte Facil",
+    "shortDescription": "Convert images and PDFs on your computer",
+    "longDescription": "Converte Facil converts images and PDFs locally. Files never leave your computer.",
+    "category": "Utility",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -42,6 +47,15 @@
       "sidecars/imagemagick/": "sidecars/imagemagick/",
       "sidecars/ghostscript/": "sidecars/ghostscript/",
       "../third-party/": "third-party/"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English", "PortugueseBR"],
+        "displayLanguageSelector": true,
+        "startMenuFolder": "Converte Facil",
+        "installerIcon": "icons/icon.ico"
+      }
     }
   }
 }

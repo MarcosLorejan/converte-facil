@@ -37,11 +37,13 @@ npm install
 npm run tauri:dev
 ```
 
-Production build:
+Production build (creates the Windows NSIS installer under `src-tauri/target/release/bundle/nsis/`):
 
 ```bash
 npm run tauri:build
 ```
+
+Installer details (shortcuts, uninstall, languages): [docs/installer.md](docs/installer.md)
 
 ### Bundled ImageMagick / Ghostscript (Windows)
 
