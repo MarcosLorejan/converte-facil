@@ -55,6 +55,17 @@
           >
             PDF
           </button>
+          <button
+            type="button"
+            id="mode-documents"
+            class="mode-option"
+            role="tab"
+            aria-controls="panel-documents"
+            aria-selected="false"
+            data-i18n="modeDocuments"
+          >
+            Documents
+          </button>
         </div>
 
         <div id="panel-images" class="mode-panel" role="tabpanel" aria-labelledby="mode-images">
@@ -188,6 +199,96 @@
           </section>
         </div>
 
+        <div
+          id="panel-documents"
+          class="mode-panel"
+          role="tabpanel"
+          aria-labelledby="mode-documents"
+          hidden
+        >
+          <section class="docs-to-pdf" aria-labelledby="docs-title">
+            <h2 id="docs-title" data-i18n="docsTitle">Turn Word or Excel into a PDF</h2>
+            <p class="pdf-help" data-i18n="docsHelp">
+              Choose a .docx or .xlsx file, then save a PDF on your computer.
+            </p>
+
+            <div id="docs-libreoffice-guide" class="docs-guide" hidden>
+              <h3 data-i18n="docsLoGuideTitle">Install LibreOffice to convert Word/Excel</h3>
+              <p class="pdf-help" data-i18n="docsLoGuideBody">
+                Converte Fácil uses LibreOffice on this computer for documents.
+                It is free, and is not included in the Converte Fácil installer.
+              </p>
+              <ol class="docs-guide-steps">
+                <li data-i18n="docsLoGuideStep1">
+                  Download LibreOffice from the official website.
+                </li>
+                <li data-i18n="docsLoGuideStep2">
+                  Run the installer (you may need an administrator password).
+                </li>
+                <li data-i18n="docsLoGuideStep3">
+                  Come back here and click Check again.
+                </li>
+              </ol>
+              <div class="docs-guide-actions">
+                <button
+                  type="button"
+                  id="docs-lo-download"
+                  class="convert-button"
+                  data-i18n="docsLoDownload"
+                >
+                  Open LibreOffice download
+                </button>
+                <button
+                  type="button"
+                  id="docs-lo-check"
+                  class="drop-browse"
+                  data-i18n="docsLoCheckAgain"
+                >
+                  Check again
+                </button>
+              </div>
+              <p class="docs-guide-hint" data-i18n="docsLoWingetHint">
+                Advanced: winget install TheDocumentFoundation.LibreOffice
+              </p>
+            </div>
+
+            <div id="docs-convert-block">
+              <div class="pdf-pick-row">
+                <button type="button" id="docs-pick" class="drop-browse" data-i18n="docsPickButton">
+                  Choose Word or Excel file
+                </button>
+              </div>
+
+              <div id="docs-error" class="drop-error" role="alert" hidden></div>
+
+              <div id="docs-selection" class="pdf-selection" hidden>
+                <p class="queue-heading" data-i18n="docsSelectedLabel">Selected file</p>
+                <div class="queue-item">
+                  <div class="queue-meta">
+                    <p id="docs-file-name" class="queue-name"></p>
+                  </div>
+                  <button type="button" id="docs-clear" class="queue-remove" data-i18n="dropClear">
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+              <div class="convert-actions">
+                <button
+                  type="button"
+                  id="docs-convert-button"
+                  class="convert-button"
+                  disabled
+                  data-i18n="docsConvertButton"
+                >
+                  Convert to PDF
+                </button>
+                <div id="docs-convert-status" class="convert-status" role="status" tabindex="-1" hidden></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
         <section class="engines" aria-live="polite">
           <h2 data-i18n="enginesTitle">Tools on this computer</h2>
           <ul class="engine-list">
@@ -206,6 +307,14 @@
               </div>
               <p class="engine-detail" data-role="detail"></p>
               <p class="engine-tip" data-role="tip" data-i18n="ghostscriptTip" hidden></p>
+            </li>
+            <li id="engine-libreoffice" class="engine-item is-checking">
+              <div class="engine-row">
+                <span class="engine-name" data-i18n="libreofficeLabel">LibreOffice (for Word/Excel)</span>
+                <span class="engine-badge" data-role="badge" data-i18n="statusChecking">Checking…</span>
+              </div>
+              <p class="engine-detail" data-role="detail"></p>
+              <p class="engine-tip" data-role="tip" data-i18n="libreofficeTip" hidden></p>
             </li>
           </ul>
           <p id="engines-error" class="engines-error" hidden data-i18n="enginesError"></p>

@@ -18,6 +18,7 @@ pub struct ToolStatus {
 pub struct EngineStatus {
     pub imagemagick: ToolStatus,
     pub ghostscript: ToolStatus,
+    pub libreoffice: ToolStatus,
 }
 
 /// Set by `run()` from Tauri's resource directory (production installs).
@@ -145,6 +146,110 @@ fn find_bundled_ghostscript() -> Option<(PathBuf, String)> {
     None
 }
 
+#[cfg(windows)]
+fn soffice_file_name() -> &'static str {
+    "soffice.exe"
+}
+
+#[cfg(not(windows))]
+fn soffice_file_name() -> &'static str {
+    "soffice"
+}
+
+fn find_soffice_in_dir(dir: &Path) -> Option<PathBuf> {
+    let candidate = dir.join(soffice_file_name());
+    if candidate.is_file() {
+        Some(candidate)
+    } else {
+        None
+    }
+}
+
+/// System LibreOffice only (ADR 0002 — not shipped in the default installer).
+fn find_system_libreoffice() -> Option<(PathBuf, String)> {
+    #[cfg(windows)]
+    {
+        let mut roots = Vec::new();
+        for key in ["PROGRAMFILES", "PROGRAMFILES(X86)", "ProgramW6432"] {
+            if let Ok(dir) = std::env::var(key) {
+                roots.push(PathBuf::from(dir));
+            }
+        }
+        for root in roots {
+            if let Some(path) = find_soffice_in_dir(&root.join("LibreOffice").join("program")) {
+                if let Some(detail) = probe_binary(&path, &["--version"]) {
+                    return Some((path, detail));
+                }
+            }
+            if let Ok(entries) = std::fs::read_dir(&root) {
+                for entry in entries.flatten() {
+                    let name = entry.file_name().to_string_lossy().to_lowercase();
+                    if !name.starts_with("libreoffice") {
+                        continue;
+                    }
+                    if let Some(path) = find_soffice_in_dir(&entry.path().join("program")) {
+                        if let Some(detail) = probe_binary(&path, &["--version"]) {
+                            return Some((path, detail));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        for dir in [
+            "/usr/bin",
+            "/usr/lib/libreoffice/program",
+            "/usr/lib64/libreoffice/program",
+            "/Applications/LibreOffice.app/Contents/MacOS",
+        ] {
+            if let Some(path) = find_soffice_in_dir(Path::new(dir)) {
+                if let Some(detail) = probe_binary(&path, &["--version"]) {
+                    return Some((path, detail));
+                }
+            }
+        }
+    }
+
+    #[cfg(windows)]
+    let status = probe_command(&["soffice.exe", "soffice"], &["--version"]);
+    #[cfg(not(windows))]
+    let status = probe_command(&["soffice", "libreoffice"], &["--version"]);
+
+    if status.available {
+        Some((
+            PathBuf::from(&status.name),
+            status.detail.unwrap_or_default(),
+        ))
+    } else {
+        None
+    }
+}
+
+fn detect_libreoffice() -> ToolStatus {
+    if let Some((path, detail)) = find_system_libreoffice() {
+        ToolStatus {
+            available: true,
+            name: path.to_string_lossy().into_owned(),
+            detail: if detail.is_empty() {
+                None
+            } else {
+                Some(detail)
+            },
+            bundled: false,
+        }
+    } else {
+        ToolStatus {
+            available: false,
+            name: soffice_file_name().to_string(),
+            detail: None,
+            bundled: false,
+        }
+    }
+}
+
 pub fn detect_engines() -> EngineStatus {
     let imagemagick = if let Some((path, detail)) = find_bundled_magick() {
         ToolStatus {
@@ -176,6 +281,7 @@ pub fn detect_engines() -> EngineStatus {
     EngineStatus {
         imagemagick,
         ghostscript,
+        libreoffice: detect_libreoffice(),
     }
 }
 
@@ -389,9 +495,126 @@ fn page_file_names(output_dir: &str, ext: &str) -> std::collections::HashSet<Str
         .collect()
 }
 
+pub fn is_supported_document(path: &str) -> bool {
+    let lower = path.to_lowercase();
+    lower.ends_with(".docx") || lower.ends_with(".xlsx")
+}
+
+fn path_to_file_url(path: &Path) -> String {
+    let raw = path.to_string_lossy();
+    let normalized = raw.trim_start_matches(r"\\?\").replace('\\', "/");
+    if normalized.starts_with('/') {
+        format!("file://{normalized}")
+    } else {
+        format!("file:///{normalized}")
+    }
+}
+
+fn unique_temp_dir(prefix: &str) -> Result<PathBuf, String> {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let dir = std::env::temp_dir().join(format!("{prefix}-{nanos}"));
+    std::fs::create_dir_all(&dir).map_err(|_| "spawn_failed".to_string())?;
+    Ok(dir)
+}
+
+fn prepare_soffice_command(program: &str) -> Command {
+    let mut command = Command::new(program);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    command
+}
+
+/// Convert Word/Excel (`.docx` / `.xlsx`) to PDF via system LibreOffice headless.
+pub fn convert_document_to_pdf(input_path: &str, output_path: &str) -> Result<(), String> {
+    if !is_supported_document(input_path) {
+        return Err("unsupported_format".into());
+    }
+    if !output_path.to_lowercase().ends_with(".pdf") {
+        return Err("invalid_format".into());
+    }
+
+    let libreoffice = detect_libreoffice();
+    if !libreoffice.available {
+        return Err("missing_libreoffice".into());
+    }
+
+    let input = Path::new(input_path);
+    let stem = input
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .ok_or_else(|| "convert_failed".to_string())?;
+
+    let work_dir = unique_temp_dir("converte-facil-lo-out")?;
+    let profile_dir = unique_temp_dir("converte-facil-lo-profile")?;
+    let profile_url = path_to_file_url(&profile_dir);
+
+    let cleanup = |dirs: &[PathBuf]| {
+        for dir in dirs {
+            let _ = std::fs::remove_dir_all(dir);
+        }
+    };
+
+    let output = prepare_soffice_command(&libreoffice.name)
+        .arg("--headless")
+        .arg("--nologo")
+        .arg("--nofirststartwizard")
+        .arg(format!("-env:UserInstallation={profile_url}"))
+        .arg("--convert-to")
+        .arg("pdf")
+        .arg("--outdir")
+        .arg(&work_dir)
+        .arg(input_path)
+        .output();
+
+    let output = match output {
+        Ok(o) => o,
+        Err(_) => {
+            cleanup(&[work_dir, profile_dir]);
+            return Err("spawn_failed".into());
+        }
+    };
+
+    if !output.status.success() {
+        let err = tool_error("convert_failed", &output.stderr, &output.stdout);
+        cleanup(&[work_dir, profile_dir]);
+        return Err(err);
+    }
+
+    let produced = work_dir.join(format!("{stem}.pdf"));
+    if !produced.is_file() {
+        cleanup(&[work_dir, profile_dir]);
+        return Err("convert_failed".into());
+    }
+
+    if let Some(parent) = Path::new(output_path).parent() {
+        if !parent.as_os_str().is_empty() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+    }
+
+    let copy_result = std::fs::copy(&produced, output_path);
+    cleanup(&[work_dir, profile_dir]);
+
+    match copy_result {
+        Ok(_) => Ok(()),
+        Err(_) => Err("convert_failed".into()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{classify_pdf_tool_failure, first_line, tool_error, tool_output_detail};
+    use super::{
+        classify_pdf_tool_failure, first_line, is_supported_document, path_to_file_url, tool_error,
+        tool_output_detail,
+    };
+    use std::path::Path;
 
     #[test]
     fn first_line_skips_blanks() {
@@ -428,5 +651,19 @@ mod tests {
             classify_pdf_tool_failure("unable to open image"),
             "convert_failed"
         );
+    }
+
+    #[test]
+    fn document_extensions() {
+        assert!(is_supported_document(r"C:\docs\Report.DOCX"));
+        assert!(is_supported_document("/tmp/sheet.xlsx"));
+        assert!(!is_supported_document("notes.pdf"));
+        assert!(!is_supported_document("old.doc"));
+    }
+
+    #[test]
+    fn file_url_windows_style() {
+        let url = path_to_file_url(Path::new(r"C:\Users\me\profile"));
+        assert_eq!(url, "file:///C:/Users/me/profile");
     }
 }

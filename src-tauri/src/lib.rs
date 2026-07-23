@@ -27,6 +27,11 @@ fn combine_images_to_pdf(input_paths: Vec<String>, output_path: String) -> Resul
     engine::combine_images_to_pdf(&input_paths, &output_path)
 }
 
+#[tauri::command]
+fn convert_document_to_pdf(input_path: String, output_path: String) -> Result<(), String> {
+    engine::convert_document_to_pdf(&input_path, &output_path)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -42,7 +47,8 @@ pub fn run() {
             get_engine_status,
             convert_image,
             convert_pdf_to_images,
-            combine_images_to_pdf
+            combine_images_to_pdf,
+            convert_document_to_pdf
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

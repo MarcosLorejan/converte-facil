@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { initConvertControls, runBatchConversion } from "./convert";
+import { initDocumentsToPdf } from "./documentsToPdf";
 import { initDropZone } from "./dropzone";
 import { initFormatPicker } from "./formatPicker";
 import {
@@ -26,14 +27,15 @@ type ToolStatus = {
 type EngineStatus = {
   imagemagick: ToolStatus;
   ghostscript: ToolStatus;
+  libreoffice: ToolStatus;
 };
 
 function renderTool(
   locale: Locale,
   rootId: string,
   status: ToolStatus,
-  tipKey: "imagemagickTip" | "ghostscriptTip",
-  bundledTipKey: "imagemagickBundledTip" | "ghostscriptBundledTip",
+  tipKey: "imagemagickTip" | "ghostscriptTip" | "libreofficeTip",
+  bundledTipKey?: "imagemagickBundledTip" | "ghostscriptBundledTip",
 ) {
   const root = document.querySelector<HTMLElement>(`#${rootId}`);
   if (!root) return;
@@ -59,7 +61,7 @@ function renderTool(
   }
 
   if (tip) {
-    if (status.available && status.bundled) {
+    if (status.available && status.bundled && bundledTipKey) {
       tip.textContent = t(locale, bundledTipKey);
       tip.hidden = false;
     } else if (!status.available) {
@@ -72,7 +74,10 @@ function renderTool(
   }
 }
 
-async function refreshEngines(locale: Locale) {
+async function refreshEngines(
+  locale: Locale,
+  onLibreOffice?: (available: boolean) => void,
+) {
   const errorEl = document.querySelector<HTMLElement>("#engines-error");
   if (errorEl) errorEl.hidden = true;
 
@@ -92,11 +97,19 @@ async function refreshEngines(locale: Locale) {
       "ghostscriptTip",
       "ghostscriptBundledTip",
     );
+    renderTool(
+      locale,
+      "engine-libreoffice",
+      status.libreoffice,
+      "libreofficeTip",
+    );
+    onLibreOffice?.(status.libreoffice.available);
   } catch {
     if (errorEl) {
       errorEl.textContent = t(locale, "enginesError");
       errorEl.hidden = false;
     }
+    onLibreOffice?.(false);
   }
 }
 
@@ -110,6 +123,18 @@ window.addEventListener("DOMContentLoaded", () => {
   const modeSwitch = initModeSwitch();
   const pdfToImages = initPdfToImages(() => locale);
   const imagesToPdf = initImagesToPdf(() => locale);
+
+  let documentsToPdf: ReturnType<typeof initDocumentsToPdf> = null;
+
+  const syncLibreOffice = (available: boolean) => {
+    documentsToPdf?.setLibreOfficeAvailable(available);
+  };
+
+  const checkEngines = () => {
+    void refreshEngines(locale, syncLibreOffice);
+  };
+
+  documentsToPdf = initDocumentsToPdf(() => locale, checkEngines);
 
   const syncConvertEnabled = () => {
     convertUi?.setEnabled(queue.length > 0 && selectedFormat !== null);
@@ -151,10 +176,11 @@ window.addEventListener("DOMContentLoaded", () => {
     convertUi?.refreshCopy(next);
     pdfToImages?.refreshCopy(next);
     imagesToPdf?.refreshCopy(next);
+    documentsToPdf?.refreshCopy(next);
     if (select) {
       select.value = next;
     }
-    void refreshEngines(next);
+    checkEngines();
   };
 
   if (select) {
