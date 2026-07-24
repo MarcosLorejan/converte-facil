@@ -106,7 +106,9 @@ fn validate_output_dir(path: &str) -> Result<&Path, String> {
 }
 
 fn probe_binary(path: &Path, args: &[&str]) -> Option<String> {
-    match Command::new(path).args(args).output() {
+    let mut command = Command::new(path);
+    hide_console_window(&mut command);
+    match command.args(args).output() {
         Ok(output) if output.status.success() => {
             let stdout = String::from_utf8_lossy(&output.stdout);
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -124,7 +126,9 @@ fn probe_command(candidates: &[&str], args: &[&str]) -> ToolStatus {
         .to_string();
 
     for binary in candidates {
-        match Command::new(binary).args(args).output() {
+        let mut command = Command::new(binary);
+        hide_console_window(&mut command);
+        match command.args(args).output() {
             Ok(output) if output.status.success() => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let stderr = String::from_utf8_lossy(&output.stderr);
@@ -385,6 +389,8 @@ pub fn refresh_engines() -> EngineStatus {
 /// Prefers bundled Magick/Ghostscript directories on PATH so delegates and DLLs resolve.
 fn prepare_command(program: &str) -> Command {
     let mut command = Command::new(program);
+    // Avoid a brief black console window on Windows (scares non-technical users).
+    hide_console_window(&mut command);
     let mut path_dirs: Vec<PathBuf> = Vec::new();
 
     let program_path = Path::new(program);
@@ -706,12 +712,7 @@ fn unique_temp_dir(prefix: &str) -> Result<PathBuf, String> {
 
 fn prepare_soffice_command(program: &str) -> Command {
     let mut command = Command::new(program);
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        command.creation_flags(CREATE_NO_WINDOW);
-    }
+    hide_console_window(&mut command);
     command
 }
 
@@ -757,15 +758,25 @@ fn cancel_requested() -> bool {
     CANCEL_FLAG.load(Ordering::SeqCst)
 }
 
+/// Hide the console window for Windows child processes (Magick / GS / soffice / taskkill).
+#[cfg(windows)]
+fn hide_console_window(command: &mut Command) {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    command.creation_flags(CREATE_NO_WINDOW);
+}
+
+#[cfg(not(windows))]
+fn hide_console_window(_command: &mut Command) {}
+
 /// Kill a process tree by PID (Windows uses `taskkill /T`).
 fn kill_pid_tree(pid: u32) {
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        let _ = Command::new("taskkill")
+        let mut command = Command::new("taskkill");
+        hide_console_window(&mut command);
+        let _ = command
             .args(["/PID", &pid.to_string(), "/T", "/F"])
-            .creation_flags(CREATE_NO_WINDOW)
             .output();
     }
     #[cfg(not(windows))]
