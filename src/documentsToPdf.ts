@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import type { DropTarget } from "./appDragDrop";
 import {
   applyHumanizedError,
   clearHumanizedError,
@@ -20,7 +21,7 @@ function isOfficePath(path: string): boolean {
   return lower.endsWith(".docx") || lower.endsWith(".xlsx");
 }
 
-export type DocumentsToPdfController = {
+export type DocumentsToPdfController = DropTarget & {
   refreshCopy: (locale: Locale) => void;
   setLibreOfficeAvailable: (available: boolean) => void;
 };
@@ -29,6 +30,7 @@ export function initDocumentsToPdf(
   getLocale: () => Locale,
   onCheckAgain: () => void,
 ): DocumentsToPdfController | null {
+  const dropZone = document.querySelector<HTMLElement>("#docs-drop-zone");
   const pickButton = document.querySelector<HTMLButtonElement>("#docs-pick");
   const clearButton = document.querySelector<HTMLButtonElement>("#docs-clear");
   const fileNameEl = document.querySelector<HTMLElement>("#docs-file-name");
@@ -48,6 +50,7 @@ export function initDocumentsToPdf(
   );
 
   if (
+    !dropZone ||
     !pickButton ||
     !clearButton ||
     !fileNameEl ||
@@ -93,11 +96,30 @@ export function initDocumentsToPdf(
     if (path) {
       fileNameEl.textContent = fileNameFromPath(path);
       selection.hidden = false;
+      dropZone.classList.add("has-file");
     } else {
       fileNameEl.textContent = "";
       selection.hidden = true;
+      dropZone.classList.remove("has-file");
     }
     syncEnabled();
+  };
+
+  const showUnsupported = () => {
+    applyHumanizedError(errorEl, getLocale(), {
+      message: t(getLocale(), "docsUnsupported"),
+    });
+  };
+
+  const acceptPaths = (paths: string[]) => {
+    if (busy || !libreOfficeAvailable || paths.length === 0) return;
+    clearHumanizedError(errorEl);
+    const match = paths.find(isOfficePath);
+    if (!match) {
+      showUnsupported();
+      return;
+    }
+    setSelection(match);
   };
 
   const pickDocument = async () => {
@@ -116,9 +138,7 @@ export function initDocumentsToPdf(
       });
       if (result === null || Array.isArray(result)) return;
       if (!isOfficePath(result)) {
-        applyHumanizedError(errorEl, getLocale(), {
-          message: t(getLocale(), "docsUnsupported"),
-        });
+        showUnsupported();
         return;
       }
       setSelection(result);
@@ -127,7 +147,18 @@ export function initDocumentsToPdf(
     }
   };
 
-  pickButton.addEventListener("click", () => {
+  dropZone.addEventListener("click", (event) => {
+    if (
+      event.target === pickButton ||
+      pickButton.contains(event.target as Node)
+    ) {
+      return;
+    }
+    if (!busy && libreOfficeAvailable) void pickDocument();
+  });
+
+  pickButton.addEventListener("click", (event) => {
+    event.stopPropagation();
     void pickDocument();
   });
 
@@ -216,6 +247,13 @@ export function initDocumentsToPdf(
   syncGuide();
 
   return {
+    acceptPaths,
+    setDragOver: (active) => {
+      dropZone.classList.toggle(
+        "is-dragover",
+        active && !busy && libreOfficeAvailable,
+      );
+    },
     setLibreOfficeAvailable: (available) => {
       libreOfficeAvailable = available;
       syncGuide();

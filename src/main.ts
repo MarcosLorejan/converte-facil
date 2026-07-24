@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { initAppDragDrop } from "./appDragDrop";
 import { initConvertControls, runBatchConversion } from "./convert";
 import { initDocumentsToPdf } from "./documentsToPdf";
 import { initDropZone } from "./dropzone";
@@ -152,6 +153,12 @@ window.addEventListener("DOMContentLoaded", () => {
       selectedFormat = null;
     }
     syncConvertEnabled();
+  });
+
+  initAppDragDrop(() => modeSwitch?.getMode() ?? "images", {
+    images: dropZone,
+    pdf: pdfToImages,
+    documents: documentsToPdf,
   });
 
   convertUi?.button.addEventListener("click", () => {

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import type { DropTarget } from "./appDragDrop";
 import {
   applyHumanizedError,
   clearHumanizedError,
@@ -15,7 +16,7 @@ function isPdfPath(path: string): boolean {
   return path.toLowerCase().endsWith(".pdf");
 }
 
-export type PdfToImagesController = {
+export type PdfToImagesController = DropTarget & {
   refreshCopy: (locale: Locale) => void;
   setBusy: (busy: boolean) => void;
 };
@@ -23,12 +24,14 @@ export type PdfToImagesController = {
 export function initPdfToImages(
   getLocale: () => Locale,
 ): PdfToImagesController | null {
+  const dropZone = document.querySelector<HTMLElement>("#pdf-drop-zone");
   const pickButton = document.querySelector<HTMLButtonElement>("#pdf-pick");
   const clearButton = document.querySelector<HTMLButtonElement>("#pdf-clear");
   const fileNameEl = document.querySelector<HTMLElement>("#pdf-file-name");
   const errorEl = document.querySelector<HTMLElement>("#pdf-error");
   const formatList = document.querySelector<HTMLElement>("#pdf-format-list");
-  const convertButton = document.querySelector<HTMLButtonElement>("#pdf-convert-button");
+  const convertButton =
+    document.querySelector<HTMLButtonElement>("#pdf-convert-button");
   const statusEl = document.querySelector<HTMLElement>("#pdf-convert-status");
   const selection = document.querySelector<HTMLElement>("#pdf-selection");
   const openFolder = bindOpenFolderButton(
@@ -36,6 +39,7 @@ export function initPdfToImages(
   );
 
   if (
+    !dropZone ||
     !pickButton ||
     !clearButton ||
     !fileNameEl ||
@@ -94,13 +98,26 @@ export function initPdfToImages(
     if (path) {
       fileNameEl.textContent = fileNameFromPath(path);
       selection.hidden = false;
+      dropZone.classList.add("has-file");
     } else {
       fileNameEl.textContent = "";
       selection.hidden = true;
+      dropZone.classList.remove("has-file");
       format = null;
       formatButtons.forEach((button) => button.classList.remove("is-selected"));
     }
     syncEnabled();
+  };
+
+  const acceptPaths = (paths: string[]) => {
+    if (busy || paths.length === 0) return;
+    clearError();
+    const match = paths.find(isPdfPath);
+    if (!match) {
+      showPlainError("pdfUnsupported");
+      return;
+    }
+    setSelection(match);
   };
 
   const pickPdf = async () => {
@@ -136,7 +153,18 @@ export function initPdfToImages(
     });
   });
 
-  pickButton.addEventListener("click", () => {
+  dropZone.addEventListener("click", (event) => {
+    if (
+      event.target === pickButton ||
+      pickButton.contains(event.target as Node)
+    ) {
+      return;
+    }
+    if (!busy) void pickPdf();
+  });
+
+  pickButton.addEventListener("click", (event) => {
+    event.stopPropagation();
     void pickPdf();
   });
 
@@ -213,6 +241,10 @@ export function initPdfToImages(
   openFolder?.hide();
 
   return {
+    acceptPaths,
+    setDragOver: (active) => {
+      dropZone.classList.toggle("is-dragover", active && !busy);
+    },
     setBusy: (next) => {
       busy = next;
       syncEnabled();
@@ -233,7 +265,11 @@ export function initPdfToImages(
         errorEl.textContent = t(locale, plainErrorKey);
         errorEl.hidden = false;
       } else if (lastRawError != null) {
-        const humanized = humanizeError(locale, lastRawError, "pdfConvertFailed");
+        const humanized = humanizeError(
+          locale,
+          lastRawError,
+          "pdfConvertFailed",
+        );
         applyHumanizedError(errorEl, locale, humanized);
         if (!statusEl.hidden && statusEl.classList.contains("is-error")) {
           statusEl.replaceChildren();

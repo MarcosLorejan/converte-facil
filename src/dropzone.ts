@@ -1,6 +1,6 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open } from "@tauri-apps/plugin-dialog";
+import type { DropTarget } from "./appDragDrop";
 import {
   fileNameFromPath,
   IMAGE_DIALOG_EXTENSIONS,
@@ -25,7 +25,7 @@ type DropZoneUi = {
   list: HTMLElement;
 };
 
-export type DropZoneController = {
+export type DropZoneController = DropTarget & {
   getQueue: () => SelectedImage[];
   setItemStatus: (
     path: string,
@@ -224,23 +224,11 @@ export function initDropZone(
     void openPicker();
   });
 
-  void getCurrentWebview()
-    .onDragDropEvent((event) => {
-      if (event.payload.type === "over") {
-        zone.classList.add("is-dragover");
-      } else if (event.payload.type === "leave" || event.payload.type === "drop") {
-        zone.classList.remove("is-dragover");
-      }
-
-      if (event.payload.type === "drop") {
-        acceptPaths(event.payload.paths);
-      }
-    })
-    .catch(() => {
-      // Running outside Tauri (e.g. vite-only) — picker still works
-    });
-
   return {
+    acceptPaths,
+    setDragOver: (active) => {
+      zone.classList.toggle("is-dragover", active);
+    },
     getQueue: () => queue.map(({ path, name }) => ({ path, name })),
     setItemStatus: (path, status, errorMessage = "", errorDetails = "") => {
       const item = queue.find((entry) => entry.path === path);
