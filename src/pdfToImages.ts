@@ -7,6 +7,7 @@ import {
 } from "./errors";
 import { fileNameFromPath } from "./images";
 import { t, type Locale } from "./i18n";
+import { bindOpenFolderButton } from "./openOutput";
 
 export type PdfImageFormat = "png" | "jpg";
 
@@ -30,6 +31,9 @@ export function initPdfToImages(
   const convertButton = document.querySelector<HTMLButtonElement>("#pdf-convert-button");
   const statusEl = document.querySelector<HTMLElement>("#pdf-convert-status");
   const selection = document.querySelector<HTMLElement>("#pdf-selection");
+  const openFolder = bindOpenFolderButton(
+    document.querySelector<HTMLButtonElement>("#pdf-open-folder"),
+  );
 
   if (
     !pickButton ||
@@ -141,6 +145,7 @@ export function initPdfToImages(
     statusEl.hidden = true;
     statusEl.classList.remove("is-error", "is-success");
     statusEl.replaceChildren();
+    openFolder?.hide();
     setSelection(null);
   });
 
@@ -165,6 +170,7 @@ export function initPdfToImages(
       busy = true;
       syncEnabled();
       convertButton.classList.add("is-busy");
+      openFolder?.hide();
       statusEl.hidden = false;
       statusEl.classList.remove("is-error", "is-success");
       statusEl.replaceChildren();
@@ -184,12 +190,14 @@ export function initPdfToImages(
         statusEl.textContent = t(locale, "pdfConvertSuccess")
           .replace("{count}", String(result.pageCount))
           .replace("{folder}", folderName);
+        openFolder?.show(result.outputDir, true);
         statusEl.focus();
       } catch (error) {
         const humanized = humanizeError(locale, error, "pdfConvertFailed");
         statusEl.classList.add("is-error");
         statusEl.replaceChildren();
         statusEl.textContent = humanized.message;
+        openFolder?.hide();
         statusEl.focus();
         showInvokeError(error, locale);
       } finally {
@@ -202,6 +210,7 @@ export function initPdfToImages(
 
   setSelection(null);
   statusEl.hidden = true;
+  openFolder?.hide();
 
   return {
     setBusy: (next) => {
@@ -209,6 +218,7 @@ export function initPdfToImages(
       syncEnabled();
     },
     refreshCopy: (locale) => {
+      openFolder?.refreshCopy(t(locale, "openOutputFolder"));
       formatButtons.forEach((button) => {
         const key = button.dataset.i18n;
         if (key === "formatPng" || key === "formatJpg") {

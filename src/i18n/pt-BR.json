@@ -92,6 +92,7 @@
   "convertProgress": "Convertendo… aguarde.",
   "convertSuccess": "Pronto! Seus arquivos foram salvos.",
   "convertRenamedNote": "Alguns nomes foram alterados para não sobrescrever arquivos existentes.",
+  "openOutputFolder": "Abrir pasta",
   "convertPartial": "Concluído com alguns erros. Confira cada arquivo abaixo.",
   "convertAllFailed": "Não foi possível converter os arquivos. Confira cada arquivo abaixo.",
   "convertFailed": "Não foi possível converter este arquivo. Tente outra imagem ou outro formato.",

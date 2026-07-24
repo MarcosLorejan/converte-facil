@@ -12,6 +12,7 @@ import {
   type SelectedImage,
 } from "./images";
 import { t, type Locale } from "./i18n";
+import { bindOpenFolderButton } from "./openOutput";
 
 type QueueItem = SelectedImage;
 
@@ -30,6 +31,9 @@ export function initImagesToPdf(
   const list = document.querySelector<HTMLElement>("#images-to-pdf-list");
   const convertButton = document.querySelector<HTMLButtonElement>("#images-to-pdf-convert");
   const statusEl = document.querySelector<HTMLElement>("#images-to-pdf-status");
+  const openFolder = bindOpenFolderButton(
+    document.querySelector<HTMLButtonElement>("#images-to-pdf-open-folder"),
+  );
 
   if (!pickButton || !errorEl || !queueRoot || !list || !convertButton || !statusEl) {
     return null;
@@ -223,6 +227,7 @@ export function initImagesToPdf(
       busy = true;
       syncEnabled();
       convertButton.classList.add("is-busy");
+      openFolder?.hide();
       statusEl.hidden = false;
       statusEl.classList.remove("is-error", "is-success");
       statusEl.replaceChildren();
@@ -236,12 +241,14 @@ export function initImagesToPdf(
         });
         statusEl.classList.add("is-success");
         statusEl.textContent = t(locale, "imagesToPdfSuccess");
+        openFolder?.show(normalized, false);
         statusEl.focus();
       } catch (error) {
         const humanized = humanizeError(locale, error, "imagesToPdfFailed");
         statusEl.classList.add("is-error");
         statusEl.replaceChildren();
         statusEl.textContent = humanized.message;
+        openFolder?.hide();
         statusEl.focus();
         showInvokeError(error, locale);
       } finally {
@@ -254,9 +261,11 @@ export function initImagesToPdf(
 
   renderQueue();
   statusEl.hidden = true;
+  openFolder?.hide();
 
   return {
     refreshCopy: (locale) => {
+      openFolder?.refreshCopy(t(locale, "openOutputFolder"));
       renderQueue();
       if (!statusEl.hidden && convertButton.classList.contains("is-busy")) {
         statusEl.replaceChildren();

@@ -9,6 +9,7 @@ import {
 } from "./errors";
 import { fileNameFromPath } from "./images";
 import { t, type Locale } from "./i18n";
+import { bindOpenFolderButton } from "./openOutput";
 
 const LIBREOFFICE_DOWNLOAD_URL =
   "https://www.libreoffice.org/download/download-libreoffice/";
@@ -47,6 +48,9 @@ export function initDocumentsToPdf(
   const checkButton =
     document.querySelector<HTMLButtonElement>("#docs-lo-check");
   const convertBlock = document.querySelector<HTMLElement>("#docs-convert-block");
+  const openFolder = bindOpenFolderButton(
+    document.querySelector<HTMLButtonElement>("#docs-open-folder"),
+  );
 
   if (
     !pickButton ||
@@ -76,6 +80,7 @@ export function initDocumentsToPdf(
       statusEl.hidden = true;
       statusEl.classList.remove("is-error", "is-success");
       statusEl.textContent = "";
+      openFolder?.hide();
     }
   };
 
@@ -136,6 +141,7 @@ export function initDocumentsToPdf(
     statusEl.hidden = true;
     statusEl.classList.remove("is-error", "is-success");
     statusEl.textContent = "";
+    openFolder?.hide();
     setSelection(null);
   });
 

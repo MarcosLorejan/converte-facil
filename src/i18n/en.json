@@ -92,6 +92,7 @@
   "convertProgress": "Converting… please wait.",
   "convertSuccess": "Done! Your files were saved.",
   "convertRenamedNote": "Some names were changed so existing files were not overwritten.",
+  "openOutputFolder": "Open folder",
   "convertPartial": "Finished with some errors. Check each file below.",
   "convertAllFailed": "Could not convert the files. Check each file below.",
   "convertFailed": "We could not convert this file. Try another image or a different format.",

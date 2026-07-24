@@ -9,6 +9,7 @@ import {
 import { extensionForFormat, type OutputFormatId } from "./formats";
 import { fileNameFromPath, type SelectedImage } from "./images";
 import { t, type Locale } from "./i18n";
+import { bindOpenFolderButton, type OpenFolderControl } from "./openOutput";
 
 function stemFromPath(path: string): string {
   const name = fileNameFromPath(path);
@@ -69,6 +70,7 @@ function showStatusWithOptionalDetails(
 export type ConvertUi = {
   button: HTMLButtonElement;
   status: HTMLElement;
+  openFolder: OpenFolderControl | null;
   setBusy: (busy: boolean) => void;
   setEnabled: (enabled: boolean) => void;
   refreshCopy: (locale: Locale) => void;
@@ -77,6 +79,9 @@ export type ConvertUi = {
 export function initConvertControls(): ConvertUi | null {
   const button = document.querySelector<HTMLButtonElement>("#convert-button");
   const status = document.querySelector<HTMLElement>("#convert-status");
+  const openFolder = bindOpenFolderButton(
+    document.querySelector<HTMLButtonElement>("#convert-open-folder"),
+  );
   if (!button || !status) return null;
 
   const setBusy = (busy: boolean) => {
@@ -84,6 +89,7 @@ export function initConvertControls(): ConvertUi | null {
     button.classList.toggle("is-busy", busy);
     status.hidden = !busy;
     if (busy) {
+      openFolder?.hide();
       showStatusMessage(status, button.dataset.progressText ?? "");
     }
   };
@@ -97,6 +103,7 @@ export function initConvertControls(): ConvertUi | null {
 
   const refreshCopy = (locale: Locale) => {
     button.dataset.progressText = t(locale, "convertProgress");
+    openFolder?.refreshCopy(t(locale, "openOutputFolder"));
     if (!status.hidden && button.classList.contains("is-busy")) {
       showStatusMessage(status, t(locale, "convertProgress"));
     }
@@ -104,8 +111,9 @@ export function initConvertControls(): ConvertUi | null {
 
   setEnabled(false);
   status.hidden = true;
+  openFolder?.hide();
 
-  return { button, status, setBusy, setEnabled, refreshCopy };
+  return { button, status, openFolder, setBusy, setEnabled, refreshCopy };
 }
 
 export async function runBatchConversion(options: {
@@ -139,6 +147,7 @@ export async function runBatchConversion(options: {
 
   resetStatuses();
   ui.setBusy(true);
+  ui.openFolder?.hide();
   ui.status.hidden = false;
   ui.status.classList.remove("is-error", "is-success");
   showStatusMessage(ui.status, t(locale, "convertProgress"));
@@ -189,8 +198,10 @@ export async function runBatchConversion(options: {
       const note =
         renamedCount > 0 ? ` ${t(locale, "convertRenamedNote")}` : "";
       showStatusMessage(ui.status, `${base}${note}`);
+      ui.openFolder?.show(outputDir, true);
     } else if (successCount === 0) {
       ui.status.classList.add("is-error");
+      ui.openFolder?.hide();
       const summary =
         queue.length === 1 && lastHumanized
           ? lastHumanized.message
@@ -203,6 +214,7 @@ export async function runBatchConversion(options: {
       );
     } else {
       ui.status.classList.add("is-error");
+      ui.openFolder?.show(outputDir, true);
       showStatusWithOptionalDetails(
         ui.status,
         locale,
