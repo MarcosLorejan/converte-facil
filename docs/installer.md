@@ -47,6 +47,7 @@ Pinned in [`scripts/install-libreoffice-setup.ps1`](../scripts/install-libreoffi
 - Version / MSI URL from Document Foundation `stable/` (currently **26.2.4** x86_64)
 - SHA256 must match the winget package digest when bumping
 - Hook: `src-tauri/windows/hooks.nsh` → `NSIS_HOOK_POSTINSTALL`
+- Keep the helper script **ASCII-only** (or UTF-8 **with BOM**). Windows PowerShell 5.1 parses BOM-less UTF-8 as ANSI; an em-dash byte can become `"` and break the script before any log is written.
 
 ## Smoke test (this machine)
 
