@@ -524,6 +524,52 @@ h1 {
 
 .engines {
   margin: 0;
+  padding: 0.15rem 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.engines-summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.85rem 0;
+  user-select: none;
+}
+
+.engines-summary::-webkit-details-marker {
+  display: none;
+}
+
+.engines-summary::before {
+  content: "";
+  display: inline-block;
+  width: 0.45em;
+  height: 0.45em;
+  margin-right: 0.55rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  vertical-align: 0.15em;
+  transition: transform 0.15s ease;
+}
+
+.engines[open] > .engines-summary::before {
+  transform: rotate(45deg);
+  vertical-align: 0.05em;
+}
+
+.engines-help {
+  margin: 0 0 0.75rem;
+  font-size: 0.98rem;
+  color: var(--muted);
+}
+
+.engines-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .engines h2 {

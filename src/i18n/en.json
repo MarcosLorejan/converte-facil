@@ -56,6 +56,8 @@
   "imagesToPdfProgress": "Creating PDF… please wait.",
   "imagesToPdfSuccess": "Done! Your PDF was saved.",
   "imagesToPdfFailed": "We could not create this PDF. Try other photos, or check that the conversion tools are ready.",
+  "enginesAdvanced": "Advanced",
+  "enginesAdvancedHelp": "Conversion tool status — useful if something is not working.",
   "enginesTitle": "Tools on this computer",
   "statusChecking": "Checking…",
   "statusReady": "Ready",
