@@ -444,14 +444,22 @@ pub fn convert_image(input_path: &str, output_path: &str) -> Result<(), String> 
     }
 }
 
-/// Convert each PDF page into an image file in `output_dir`.
-/// Writes `page-001.ext`, `page-002.ext`, … (1-based).
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfToImagesResult {
+    pub page_count: u32,
+    /// Absolute path of the unique subfolder that received `page-*.{ext}` files.
+    pub output_dir: String,
+}
+
+/// Convert each PDF page into an image file under a unique subfolder of `output_dir`.
+/// Writes `page-001.ext`, `page-002.ext`, … (1-based) so existing files are never overwritten.
 /// `format` must be `png` or `jpg`.
 pub fn convert_pdf_to_images(
     input_path: &str,
     output_dir: &str,
     format: &str,
-) -> Result<u32, String> {
+) -> Result<PdfToImagesResult, String> {
     let ext = match format {
         "png" | "jpg" => format,
         _ => return Err("invalid_format".into()),
@@ -468,8 +476,15 @@ pub fn convert_pdf_to_images(
         return Err("missing_ghostscript".into());
     }
 
-    let before = page_file_names(output_dir, ext);
-    let pattern = std::path::Path::new(output_dir)
+    let stem = Path::new(input_path)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .filter(|s| !s.is_empty())
+        .unwrap_or("pdf");
+    let pages_dir = unique_child_dir(Path::new(output_dir), &format!("{stem}-pages"))?;
+    let pages_dir_str = pages_dir.to_string_lossy().into_owned();
+
+    let pattern = pages_dir
         .join(format!("page-%03d.{ext}"))
         .to_string_lossy()
         .into_owned();
@@ -494,15 +509,20 @@ pub fn convert_pdf_to_images(
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let code = classify_pdf_tool_failure(&stderr);
+        let _ = std::fs::remove_dir_all(&pages_dir);
         return Err(tool_error(code, &output.stderr, &output.stdout));
     }
 
-    let after = page_file_names(output_dir, ext);
-    let page_count = after.difference(&before).count() as u32;
+    let page_count = page_file_names(&pages_dir_str, ext).len() as u32;
     if page_count == 0 {
+        let _ = std::fs::remove_dir_all(&pages_dir);
         return Err("convert_failed".into());
     }
-    Ok(page_count)
+
+    Ok(PdfToImagesResult {
+        page_count,
+        output_dir: pages_dir_str,
+    })
 }
 
 /// Combine image files into a single PDF at `output_path`.
@@ -557,6 +577,39 @@ fn page_file_names(output_dir: &str, ext: &str) -> std::collections::HashSet<Str
             }
         })
         .collect()
+}
+
+/// Create `{parent}/{base_name}` or `{parent}/{base_name}-2`, … until free.
+fn unique_child_dir(parent: &Path, base_name: &str) -> Result<PathBuf, String> {
+    let safe = base_name
+        .chars()
+        .map(|c| match c {
+            '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*' => '_',
+            _ => c,
+        })
+        .collect::<String>();
+    let safe = if safe.trim().is_empty() {
+        "pages".to_string()
+    } else {
+        safe
+    };
+
+    let mut candidate = parent.join(&safe);
+    let mut index = 2u32;
+    while candidate.exists() {
+        candidate = parent.join(format!("{safe}-{index}"));
+        index = index.saturating_add(1);
+        if index > 10_000 {
+            return Err("convert_failed".into());
+        }
+    }
+
+    std::fs::create_dir_all(&candidate).map_err(|_| "spawn_failed".to_string())?;
+    Ok(candidate)
+}
+
+pub fn path_exists(path: &str) -> bool {
+    Path::new(path).exists()
 }
 
 pub fn is_supported_document(path: &str) -> bool {
@@ -679,8 +732,8 @@ pub fn convert_document_to_pdf(input_path: &str, output_path: &str) -> Result<()
 mod tests {
     use super::{
         classify_pdf_tool_failure, first_line, is_supported_document, path_looks_unsafe,
-        path_to_file_url, tool_error, tool_output_detail, validate_absolute_path,
-        validate_output_file_path,
+        path_to_file_url, tool_error, tool_output_detail, unique_child_dir,
+        validate_absolute_path, validate_output_file_path,
     };
     use std::path::Path;
 
@@ -749,6 +802,23 @@ mod tests {
         assert!(is_supported_document("/tmp/sheet.xlsx"));
         assert!(!is_supported_document("notes.pdf"));
         assert!(!is_supported_document("old.doc"));
+    }
+
+    #[test]
+    fn unique_child_dir_avoids_existing() {
+        let parent = std::env::temp_dir().join(format!(
+            "converte-facil-unique-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        std::fs::create_dir_all(&parent).unwrap();
+        let first = unique_child_dir(&parent, "report-pages").unwrap();
+        assert!(first.ends_with("report-pages"));
+        let second = unique_child_dir(&parent, "report-pages").unwrap();
+        assert!(second.ends_with("report-pages-2"));
+        let _ = std::fs::remove_dir_all(&parent);
     }
 
     #[test]

@@ -23,19 +23,29 @@ function joinPath(dir: string, name: string): string {
   return `${dir}${sep}${name}`;
 }
 
-function uniqueFileName(
+async function uniqueFileName(
+  dir: string,
   stem: string,
   ext: string,
   used: Set<string>,
-): string {
+): Promise<{ fileName: string; renamed: boolean }> {
   let candidate = `${stem}.${ext}`;
   let index = 2;
-  while (used.has(candidate.toLowerCase())) {
+  let renamed = false;
+  while (true) {
+    const lower = candidate.toLowerCase();
+    if (!used.has(lower)) {
+      const fullPath = joinPath(dir, candidate);
+      const exists = await invoke<boolean>("path_exists", { path: fullPath });
+      if (!exists) {
+        used.add(lower);
+        return { fileName: candidate, renamed };
+      }
+    }
+    renamed = true;
     candidate = `${stem}-${index}.${ext}`;
     index += 1;
   }
-  used.add(candidate.toLowerCase());
-  return candidate;
 }
 
 function showStatusMessage(el: HTMLElement, message: string): void {
@@ -137,12 +147,19 @@ export async function runBatchConversion(options: {
   const usedNames = new Set<string>();
   let successCount = 0;
   let failCount = 0;
+  let renamedCount = 0;
   let lastHumanized: HumanizedError | null = null;
 
   try {
     for (const item of queue) {
       setItemStatus(item.path, "converting");
-      const fileName = uniqueFileName(stemFromPath(item.path), ext, usedNames);
+      const { fileName, renamed } = await uniqueFileName(
+        outputDir,
+        stemFromPath(item.path),
+        ext,
+        usedNames,
+      );
+      if (renamed) renamedCount += 1;
       const outputPath = joinPath(outputDir, fileName);
 
       try {
@@ -168,7 +185,10 @@ export async function runBatchConversion(options: {
     ui.status.classList.remove("is-error", "is-success");
     if (failCount === 0) {
       ui.status.classList.add("is-success");
-      showStatusMessage(ui.status, t(locale, "convertSuccess"));
+      const base = t(locale, "convertSuccess");
+      const note =
+        renamedCount > 0 ? ` ${t(locale, "convertRenamedNote")}` : "";
+      showStatusMessage(ui.status, `${base}${note}`);
     } else if (successCount === 0) {
       ui.status.classList.add("is-error");
       const summary =
