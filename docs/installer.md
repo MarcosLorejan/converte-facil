@@ -48,6 +48,7 @@ Pinned in [`scripts/install-libreoffice-setup.ps1`](../scripts/install-libreoffi
 - SHA256 must match the winget package digest when bumping
 - Hook: `src-tauri/windows/hooks.nsh` → `NSIS_HOOK_POSTINSTALL`
 - Keep the helper script **ASCII-only** (or UTF-8 **with BOM**). Windows PowerShell 5.1 parses BOM-less UTF-8 as ANSI; an em-dash byte can become `"` and break the script before any log is written.
+- Silent MSI uses `ADDLOCAL=ALL` so Word/Excel (OOXML) filters are included.
 
 ## Smoke test (this machine)
 
