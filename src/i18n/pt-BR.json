@@ -18,6 +18,7 @@
   "docsConvertProgress": "Convertendo documento… aguarde.",
   "docsConvertSuccess": "Pronto! Seu PDF foi salvo.",
   "docsConvertFailed": "Não foi possível converter este documento. Tente outro arquivo ou confira se o LibreOffice está instalado.",
+  "docsConvertTimeout": "Este documento demorou demais para converter. Tente um arquivo mais simples, ou feche o LibreOffice se ele já estiver aberto.",
   "docsMissingLibreOffice": "A conversão de documentos precisa do LibreOffice neste computador. Instale-o no site oficial e clique em Verificar de novo.",
   "docsUnsupported": "Escolha um arquivo Word (.docx) ou Excel (.xlsx).",
   "docsOpenDownloadFailed": "Não foi possível abrir a página de download. Visite libreoffice.org no navegador.",

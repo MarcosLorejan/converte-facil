@@ -17,6 +17,7 @@ const CODE_KEYS: Record<string, MessageKey> = {
   unsupported_format: "docsUnsupported",
   spawn_failed: "convertSpawnFailed",
   convert_failed: "convertFailed",
+  convert_timeout: "docsConvertTimeout",
   invalid_format: "errorUnsupportedCodec",
   invalid_path: "errorFileUnreadable",
   no_inputs: "errorGeneric",

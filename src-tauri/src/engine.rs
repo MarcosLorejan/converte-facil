@@ -1,7 +1,12 @@
 use serde::Serialize;
+use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Output, Stdio};
 use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
+
+/// Max wall time for a LibreOffice headless conversion before kill.
+const LIBREOFFICE_CONVERT_TIMEOUT: Duration = Duration::from_secs(180);
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -679,6 +684,85 @@ fn prepare_soffice_command(program: &str) -> Command {
     command
 }
 
+enum CommandRunError {
+    Spawn,
+    Timeout,
+    Wait,
+}
+
+/// Kill a child (and its tree on Windows — LibreOffice often spawns `soffice.bin`).
+fn kill_child_tree(child: &mut std::process::Child) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let pid = child.id();
+        let _ = Command::new("taskkill")
+            .args(["/PID", &pid.to_string(), "/T", "/F"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output();
+    }
+    let _ = child.kill();
+    let _ = child.wait();
+}
+
+/// Run a command, collecting stdout/stderr, and kill it if it exceeds `timeout`.
+fn run_command_with_timeout(
+    mut command: Command,
+    timeout: Duration,
+) -> Result<Output, CommandRunError> {
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = command.spawn().map_err(|_| CommandRunError::Spawn)?;
+
+    let stdout_pipe = child.stdout.take();
+    let stderr_pipe = child.stderr.take();
+
+    let stdout_handle = std::thread::spawn(move || {
+        let mut buf = Vec::new();
+        if let Some(mut pipe) = stdout_pipe {
+            let _ = pipe.read_to_end(&mut buf);
+        }
+        buf
+    });
+    let stderr_handle = std::thread::spawn(move || {
+        let mut buf = Vec::new();
+        if let Some(mut pipe) = stderr_pipe {
+            let _ = pipe.read_to_end(&mut buf);
+        }
+        buf
+    });
+
+    let deadline = Instant::now() + timeout;
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let stdout = stdout_handle.join().unwrap_or_default();
+                let stderr = stderr_handle.join().unwrap_or_default();
+                return Ok(Output {
+                    status,
+                    stdout,
+                    stderr,
+                });
+            }
+            Ok(None) => {
+                if Instant::now() >= deadline {
+                    kill_child_tree(&mut child);
+                    let _ = stdout_handle.join();
+                    let _ = stderr_handle.join();
+                    return Err(CommandRunError::Timeout);
+                }
+                std::thread::sleep(Duration::from_millis(200));
+            }
+            Err(_) => {
+                kill_child_tree(&mut child);
+                let _ = stdout_handle.join();
+                let _ = stderr_handle.join();
+                return Err(CommandRunError::Wait);
+            }
+        }
+    }
+}
+
 /// Convert Word/Excel (`.docx` / `.xlsx`) to PDF via system LibreOffice headless.
 pub fn convert_document_to_pdf(input_path: &str, output_path: &str) -> Result<(), String> {
     if !is_supported_document(input_path) {
@@ -712,7 +796,8 @@ pub fn convert_document_to_pdf(input_path: &str, output_path: &str) -> Result<()
         }
     };
 
-    let output = prepare_soffice_command(&libreoffice.name)
+    let mut command = prepare_soffice_command(&libreoffice.name);
+    command
         .arg("--headless")
         .arg("--nologo")
         .arg("--nofirststartwizard")
@@ -721,12 +806,15 @@ pub fn convert_document_to_pdf(input_path: &str, output_path: &str) -> Result<()
         .arg("pdf")
         .arg("--outdir")
         .arg(&work_dir)
-        .arg(input_path)
-        .output();
+        .arg(input_path);
 
-    let output = match output {
+    let output = match run_command_with_timeout(command, LIBREOFFICE_CONVERT_TIMEOUT) {
         Ok(o) => o,
-        Err(_) => {
+        Err(CommandRunError::Timeout) => {
+            cleanup(&[work_dir, profile_dir]);
+            return Err("convert_timeout".into());
+        }
+        Err(CommandRunError::Spawn | CommandRunError::Wait) => {
             cleanup(&[work_dir, profile_dir]);
             return Err("spawn_failed".into());
         }
@@ -856,5 +944,30 @@ mod tests {
     fn file_url_windows_style() {
         let url = path_to_file_url(Path::new(r"C:\Users\me\profile"));
         assert_eq!(url, "file:///C:/Users/me/profile");
+    }
+
+    #[test]
+    fn run_with_timeout_kills_slow_process() {
+        use super::{run_command_with_timeout, CommandRunError};
+        use std::process::Command;
+        use std::time::Duration;
+
+        #[cfg(windows)]
+        let cmd = {
+            let mut c = Command::new("powershell");
+            c.args(["-NoProfile", "-Command", "Start-Sleep -Seconds 30"]);
+            use std::os::windows::process::CommandExt;
+            c.creation_flags(0x0800_0000);
+            c
+        };
+        #[cfg(not(windows))]
+        let cmd = {
+            let mut c = Command::new("sleep");
+            c.arg("30");
+            c
+        };
+
+        let result = run_command_with_timeout(cmd, Duration::from_secs(1));
+        assert!(matches!(result, Err(CommandRunError::Timeout)));
     }
 }
