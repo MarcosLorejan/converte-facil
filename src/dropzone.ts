@@ -3,6 +3,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
   fileNameFromPath,
+  IMAGE_DIALOG_EXTENSIONS,
   isSupportedImagePath,
   type SelectedImage,
 } from "./images";
@@ -198,7 +199,7 @@ export function initDropZone(
         filters: [
           {
             name: "Images",
-            extensions: ["jpg", "jpeg", "png", "webp", "gif", "tif", "tiff", "bmp"],
+            extensions: [...IMAGE_DIALOG_EXTENSIONS],
           },
         ],
       });

@@ -39,7 +39,8 @@ Choose **Language** (English / Português) at the top if needed.
 ## 4. Convert your first file (images)
 
 1. Click **Images**.
-2. Drop a photo onto the big box, or click **Choose files**.
+2. Drop a photo onto the big box, or click **Choose files**.  
+   Phone photos in **HEIC** / **HEIF** (and **AVIF**) are accepted when your ImageMagick build supports them.
 3. Under **Convert to**, pick a format (for example **JPG** or **PNG**).
 4. Click **Convert and save**, then choose a folder for the result.
 5. Wait until you see a success message.

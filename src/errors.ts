@@ -33,6 +33,10 @@ const DETAIL_PATTERNS: ReadonlyArray<{ test: RegExp; key: MessageKey }> = [
     key: "errorPdfEmpty",
   },
   {
+    test: /\b(heic|heif|avif|libheif)\b|no decode delegate.*\b(heic|heif|avif)\b/i,
+    key: "errorMissingHeicCodec",
+  },
+  {
     test:
       /no decode delegate|no encode delegate|unsupported.*(format|image|codec)|improper image header/i,
     key: "errorUnsupportedCodec",

@@ -7,6 +7,7 @@ import {
 } from "./errors";
 import {
   fileNameFromPath,
+  IMAGE_DIALOG_EXTENSIONS,
   isSupportedImagePath,
   type SelectedImage,
 } from "./images";
@@ -183,7 +184,7 @@ export function initImagesToPdf(
           filters: [
             {
               name: "Images",
-              extensions: ["jpg", "jpeg", "png", "webp", "gif", "tif", "tiff", "bmp"],
+              extensions: [...IMAGE_DIALOG_EXTENSIONS],
             },
           ],
           title: t(getLocale(), "imagesToPdfPickTitle"),

@@ -39,7 +39,8 @@ Se quiser, mude o **Idioma** (English / Português) no topo da janela.
 ## 4. Converter o primeiro arquivo (imagens)
 
 1. Clique em **Imagens**.
-2. Solte uma foto na caixa grande, ou clique em **Escolher arquivos**.
+2. Solte uma foto na caixa grande, ou clique em **Escolher arquivos**.  
+   Fotos de celular em **HEIC** / **HEIF** (e **AVIF**) são aceitas quando o ImageMagick do app tem suporte a esses formatos.
 3. Em **Converter para**, escolha um formato (por exemplo **JPG** ou **PNG**).
 4. Clique em **Converter e salvar** e escolha a pasta do resultado.
 5. Espere a mensagem de sucesso.
