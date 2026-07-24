@@ -1,9 +1,9 @@
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolStatus {
     pub available: bool,
@@ -13,7 +13,7 @@ pub struct ToolStatus {
     pub bundled: bool,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EngineStatus {
     pub imagemagick: ToolStatus,
@@ -23,6 +23,9 @@ pub struct EngineStatus {
 
 /// Set by `run()` from Tauri's resource directory (production installs).
 static RESOURCE_DIR: OnceLock<PathBuf> = OnceLock::new();
+
+/// Cached Magick / Ghostscript / LibreOffice probe results (cleared on refresh).
+static ENGINE_CACHE: Mutex<Option<EngineStatus>> = Mutex::new(None);
 
 pub fn set_resource_dir(path: PathBuf) {
     let _ = RESOURCE_DIR.set(path);
@@ -303,7 +306,8 @@ fn detect_libreoffice() -> ToolStatus {
     }
 }
 
-pub fn detect_engines() -> EngineStatus {
+/// Probe Magick / Ghostscript / LibreOffice without reading the cache.
+fn probe_engines() -> EngineStatus {
     let imagemagick = if let Some((path, detail)) = find_bundled_magick() {
         ToolStatus {
             available: true,
@@ -336,6 +340,33 @@ pub fn detect_engines() -> EngineStatus {
         ghostscript,
         libreoffice: detect_libreoffice(),
     }
+}
+
+/// Return cached engine status, probing once on first use.
+pub fn detect_engines() -> EngineStatus {
+    {
+        let guard = ENGINE_CACHE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(cached) = guard.as_ref() {
+            return cached.clone();
+        }
+    }
+
+    let status = probe_engines();
+    if let Ok(mut guard) = ENGINE_CACHE.lock() {
+        *guard = Some(status.clone());
+    }
+    status
+}
+
+/// Clear the cache and probe again (UI refresh / Check again).
+pub fn refresh_engines() -> EngineStatus {
+    let status = probe_engines();
+    if let Ok(mut guard) = ENGINE_CACHE.lock() {
+        *guard = Some(status.clone());
+    }
+    status
 }
 
 /// Prefers bundled Magick/Ghostscript directories on PATH so delegates and DLLs resolve.
@@ -660,7 +691,7 @@ pub fn convert_document_to_pdf(input_path: &str, output_path: &str) -> Result<()
     validate_existing_file(input_path)?;
     validate_output_file_path(output_path)?;
 
-    let libreoffice = detect_libreoffice();
+    let libreoffice = detect_engines().libreoffice;
     if !libreoffice.available {
         return Err("missing_libreoffice".into());
     }
