@@ -6,7 +6,8 @@
 
 .NOTES
   Does not remove LibreOffice on Converte Facil uninstall (shared dependency).
-  Exit codes: 0 = ready (already present or installed), 1 = failed (app fallback still works).
+  Exit codes: 0 = ready (already present, declined, or installed), 1 = failed (app fallback still works).
+  Log: %TEMP%\converte-facil-libreoffice-setup.log
 #>
 param(
   [switch]$Silent
@@ -19,6 +20,18 @@ $LibreOfficeVersion = "26.2.4"
 $MsiFileName = "LibreOffice_26.2.4_Win_x86-64.msi"
 $MsiUrl = "https://download.documentfoundation.org/libreoffice/stable/$LibreOfficeVersion/win/x86_64/$MsiFileName"
 $MsiSha256 = "202f26cda071c5aa4996a5a28412fddceb3891dceb0366982c62650456c0730f"
+
+$LogPath = Join-Path $env:TEMP "converte-facil-libreoffice-setup.log"
+
+function Write-SetupLog([string]$Message) {
+  $line = "[{0:u}] {1}" -f (Get-Date).ToUniversalTime(), $Message
+  Write-Host $line
+  try {
+    Add-Content -LiteralPath $LogPath -Value $line -Encoding UTF8 -ErrorAction SilentlyContinue
+  } catch {
+    # ignore log I/O failures
+  }
+}
 
 function Test-LibreOfficePresent {
   $candidates = @(
@@ -42,9 +55,17 @@ function Test-LibreOfficePresent {
   return $false
 }
 
-function Write-SetupLog([string]$Message) {
-  Write-Host $Message
+function Get-IsAdministrator {
+  $id = [Security.Principal.WindowsIdentity]::GetCurrent()
+  $principal = New-Object Security.Principal.WindowsPrincipal($id)
+  return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
+
+try {
+  Set-Content -LiteralPath $LogPath -Value "" -Encoding UTF8 -ErrorAction SilentlyContinue
+} catch { }
+
+Write-SetupLog "LibreOffice setup helper starting (Silent=$Silent, STA=$([System.Threading.Thread]::CurrentThread.GetApartmentState()))"
 
 if (Test-LibreOfficePresent) {
   Write-SetupLog "LibreOffice already present — skipping download."
@@ -78,14 +99,22 @@ New-Item -ItemType Directory -Force -Path $workDir | Out-Null
 $msiPath = Join-Path $workDir $MsiFileName
 
 try {
-  Write-SetupLog "Downloading LibreOffice $LibreOfficeVersion…"
-  # BITS often shows better progress in interactive sessions; fall back to IWR.
+  Write-SetupLog "Downloading LibreOffice $LibreOfficeVersion from $MsiUrl"
+  # Prefer WebClient for large files (IWR can time out; BITS often fails under NSIS).
   try {
-    Start-BitsTransfer -Source $MsiUrl -Destination $msiPath -ErrorAction Stop
+    $wc = New-Object System.Net.WebClient
+    $wc.DownloadFile($MsiUrl, $msiPath)
+    $wc.Dispose()
   } catch {
-    Write-SetupLog "BITS unavailable — using Invoke-WebRequest."
-    Invoke-WebRequest -Uri $MsiUrl -OutFile $msiPath -UseBasicParsing
+    Write-SetupLog "WebClient failed ($($_.Exception.Message)) — trying BITS."
+    Start-BitsTransfer -Source $MsiUrl -Destination $msiPath -ErrorAction Stop
   }
+
+  if (-not (Test-Path -LiteralPath $msiPath)) {
+    throw "Download finished but MSI file is missing at $msiPath"
+  }
+  $size = (Get-Item -LiteralPath $msiPath).Length
+  Write-SetupLog "Downloaded $size bytes"
 
   Write-SetupLog "Verifying SHA256…"
   $actual = (Get-FileHash -LiteralPath $msiPath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -94,8 +123,9 @@ try {
   }
 
   Write-SetupLog "Installing LibreOffice (may prompt for administrator permission)…"
-  $args = @(
-    "/i", "`"$msiPath`"",
+  # Do not use $args — it is a PowerShell automatic variable.
+  $msiexecArgs = @(
+    "/i", $msiPath,
     "/qn",
     "/norestart",
     "ALLUSERS=1",
@@ -103,12 +133,28 @@ try {
     "REGISTER_ALL_MSO_TYPES=0",
     "ISCHECKFORPRODUCTUPDATES=0",
     "RebootYesNo=No"
-  ) -join " "
+  )
 
-  $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $args -Verb RunAs -Wait -PassThru
+  $elevated = Get-IsAdministrator
+  Write-SetupLog "Current process elevated=$elevated"
+  try {
+    if ($elevated) {
+      $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiexecArgs -Wait -PassThru
+    } else {
+      $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiexecArgs -Verb RunAs -Wait -PassThru
+    }
+  } catch {
+    $msg = $_.Exception.Message
+    if ($msg -match "canceled|cancelled|recusad|cancelad") {
+      throw "Administrator permission was cancelled. Install LibreOffice later from Documents mode."
+    }
+    throw "Failed to start msiexec: $msg"
+  }
+
   $code = $proc.ExitCode
-  # 0 = success, 3010 = success reboot required (treat as OK for our purposes)
-  if ($code -ne 0 -and $code -ne 3010) {
+  Write-SetupLog "msiexec exit code=$code"
+  # 0 = success, 3010 = success reboot required (treat as OK)
+  if ($null -eq $code -or ($code -ne 0 -and $code -ne 3010)) {
     throw "msiexec exited with code $code"
   }
 
