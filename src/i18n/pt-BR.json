@@ -54,7 +54,7 @@
   "pdfMissingGhostscript": "A conversão de PDF precisa do Ghostscript neste computador. Instale-o, ou use o instalador do Converte Fácil que já o inclui.",
   "pdfUnsupported": "Escolha um arquivo PDF.",
   "imagesToPdfTitle": "Transformar fotos em PDF",
-  "imagesToPdfHelp": "Adicione fotos, defina a ordem das páginas e salve um PDF no seu computador.",
+  "imagesToPdfHelp": "Adicione fotos, defina a ordem das páginas e converta. Salvamos o PDF ao lado das fotos.",
   "imagesToPdfPickButton": "Escolher fotos",
   "imagesToPdfPickTitle": "Escolha fotos para o PDF",
   "imagesToPdfSelectedLabel": "Páginas (cima = primeira)",
