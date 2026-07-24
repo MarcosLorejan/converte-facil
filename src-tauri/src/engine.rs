@@ -13,6 +13,8 @@ const LIBREOFFICE_WINGET_ID: &str = "TheDocumentFoundation.LibreOffice";
 const LIBREOFFICE_CONVERT_TIMEOUT: Duration = Duration::from_secs(180);
 /// Safety net for Magick jobs (user cancel is the primary abort path).
 const MAGICK_CONVERT_TIMEOUT: Duration = Duration::from_secs(30 * 60);
+/// `--version` probes must not hang the UI (soffice.exe on Windows can stall).
+const ENGINE_PROBE_TIMEOUT: Duration = Duration::from_secs(8);
 
 /// Set when the user requests cancel; checked by in-flight conversion commands.
 static CANCEL_FLAG: AtomicBool = AtomicBool::new(false);
@@ -111,13 +113,64 @@ fn validate_output_dir(path: &str) -> Result<&Path, String> {
 fn probe_binary(path: &Path, args: &[&str]) -> Option<String> {
     let mut command = Command::new(path);
     hide_console_window(&mut command);
-    match command.args(args).output() {
-        Ok(output) if output.status.success() => {
+    command.args(args);
+    match run_probe_command(command) {
+        Some(output) if output.status.success() => {
             let stdout = String::from_utf8_lossy(&output.stdout);
             let stderr = String::from_utf8_lossy(&output.stderr);
             first_line(&stdout).or_else(|| first_line(&stderr))
         }
         _ => None,
+    }
+}
+
+/// Probe without touching conversion cancel / ACTIVE_PID state.
+fn run_probe_command(mut command: Command) -> Option<Output> {
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = command.spawn().ok()?;
+    let stdout_pipe = child.stdout.take();
+    let stderr_pipe = child.stderr.take();
+    let stdout_handle = std::thread::spawn(move || {
+        let mut buf = Vec::new();
+        if let Some(mut pipe) = stdout_pipe {
+            let _ = pipe.read_to_end(&mut buf);
+        }
+        buf
+    });
+    let stderr_handle = std::thread::spawn(move || {
+        let mut buf = Vec::new();
+        if let Some(mut pipe) = stderr_pipe {
+            let _ = pipe.read_to_end(&mut buf);
+        }
+        buf
+    });
+
+    let deadline = Instant::now() + ENGINE_PROBE_TIMEOUT;
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let stdout = stdout_handle.join().unwrap_or_default();
+                let stderr = stderr_handle.join().unwrap_or_default();
+                return Some(Output {
+                    status,
+                    stdout,
+                    stderr,
+                });
+            }
+            Ok(None) if Instant::now() >= deadline => {
+                kill_child_tree(&mut child);
+                let _ = stdout_handle.join();
+                let _ = stderr_handle.join();
+                return None;
+            }
+            Ok(None) => std::thread::sleep(Duration::from_millis(50)),
+            Err(_) => {
+                kill_child_tree(&mut child);
+                let _ = stdout_handle.join();
+                let _ = stderr_handle.join();
+                return None;
+            }
+        }
     }
 }
 
@@ -131,8 +184,9 @@ fn probe_command(candidates: &[&str], args: &[&str]) -> ToolStatus {
     for binary in candidates {
         let mut command = Command::new(binary);
         hide_console_window(&mut command);
-        match command.args(args).output() {
-            Ok(output) if output.status.success() => {
+        command.args(args);
+        match run_probe_command(command) {
+            Some(output) if output.status.success() => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 let detail = first_line(&stdout).or_else(|| first_line(&stderr));
@@ -222,9 +276,10 @@ fn find_bundled_ghostscript() -> Option<(PathBuf, String)> {
     None
 }
 
+/// Display / missing-tool name. On Windows the CLI entry point is `soffice.com`.
 #[cfg(windows)]
 fn soffice_file_name() -> &'static str {
-    "soffice.exe"
+    "soffice.com"
 }
 
 #[cfg(not(windows))]
@@ -232,13 +287,23 @@ fn soffice_file_name() -> &'static str {
     "soffice"
 }
 
-fn find_soffice_in_dir(dir: &Path) -> Option<PathBuf> {
-    let candidate = dir.join(soffice_file_name());
-    if candidate.is_file() {
-        Some(candidate)
-    } else {
-        None
+/// Windows: prefer `soffice.com` (console) over `soffice.exe` (GUI). The `.exe`
+/// often yields no `--version` stdout and can hang when stdio is redirected.
+fn find_working_soffice_in_dir(dir: &Path) -> Option<(PathBuf, String)> {
+    #[cfg(windows)]
+    let names: &[&str] = &["soffice.com", "soffice.exe"];
+    #[cfg(not(windows))]
+    let names: &[&str] = &[soffice_file_name()];
+
+    for name in names {
+        let candidate = dir.join(name);
+        if candidate.is_file() {
+            if let Some(detail) = probe_binary(&candidate, &["--version"]) {
+                return Some((candidate, detail));
+            }
+        }
     }
+    None
 }
 
 /// LibreOffice from system install, PATH, or optional app-local cache (ADR 0002 C).
@@ -251,10 +316,8 @@ fn find_system_libreoffice() -> Option<(PathBuf, String)> {
                 .join("converte-facil")
                 .join("LibreOffice")
                 .join("program");
-            if let Some(path) = find_soffice_in_dir(&app_local) {
-                if let Some(detail) = probe_binary(&path, &["--version"]) {
-                    return Some((path, detail));
-                }
+            if let Some(found) = find_working_soffice_in_dir(&app_local) {
+                return Some(found);
             }
         }
 
@@ -265,10 +328,10 @@ fn find_system_libreoffice() -> Option<(PathBuf, String)> {
             }
         }
         for root in roots {
-            if let Some(path) = find_soffice_in_dir(&root.join("LibreOffice").join("program")) {
-                if let Some(detail) = probe_binary(&path, &["--version"]) {
-                    return Some((path, detail));
-                }
+            if let Some(found) =
+                find_working_soffice_in_dir(&root.join("LibreOffice").join("program"))
+            {
+                return Some(found);
             }
             if let Ok(entries) = std::fs::read_dir(&root) {
                 for entry in entries.flatten() {
@@ -276,10 +339,10 @@ fn find_system_libreoffice() -> Option<(PathBuf, String)> {
                     if !name.starts_with("libreoffice") {
                         continue;
                     }
-                    if let Some(path) = find_soffice_in_dir(&entry.path().join("program")) {
-                        if let Some(detail) = probe_binary(&path, &["--version"]) {
-                            return Some((path, detail));
-                        }
+                    if let Some(found) =
+                        find_working_soffice_in_dir(&entry.path().join("program"))
+                    {
+                        return Some(found);
                     }
                 }
             }
@@ -294,16 +357,14 @@ fn find_system_libreoffice() -> Option<(PathBuf, String)> {
             "/usr/lib64/libreoffice/program",
             "/Applications/LibreOffice.app/Contents/MacOS",
         ] {
-            if let Some(path) = find_soffice_in_dir(Path::new(dir)) {
-                if let Some(detail) = probe_binary(&path, &["--version"]) {
-                    return Some((path, detail));
-                }
+            if let Some(found) = find_working_soffice_in_dir(Path::new(dir)) {
+                return Some(found);
             }
         }
     }
 
     #[cfg(windows)]
-    let status = probe_command(&["soffice.exe", "soffice"], &["--version"]);
+    let status = probe_command(&["soffice.com", "soffice.exe", "soffice"], &["--version"]);
     #[cfg(not(windows))]
     let status = probe_command(&["soffice", "libreoffice"], &["--version"]);
 
