@@ -8,6 +8,8 @@
   Does not remove LibreOffice on Converte Facil uninstall (shared dependency).
   Exit codes: 0 = ready (already present, declined, or installed), 1 = failed (app fallback still works).
   Log: %TEMP%\converte-facil-libreoffice-setup.log
+  Keep this file ASCII-only (or UTF-8 with BOM). Windows PowerShell 5.1 parses
+  BOM-less UTF-8 as system ANSI; bytes like em-dash 0x94 become a quote and break the script.
 #>
 param(
   [switch]$Silent
@@ -15,7 +17,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Pin — keep in sync with winget TheDocumentFoundation.LibreOffice when bumping.
+# Pin - keep in sync with winget TheDocumentFoundation.LibreOffice when bumping.
 $LibreOfficeVersion = "26.2.4"
 $MsiFileName = "LibreOffice_26.2.4_Win_x86-64.msi"
 $MsiUrl = "https://download.documentfoundation.org/libreoffice/stable/$LibreOfficeVersion/win/x86_64/$MsiFileName"
@@ -68,7 +70,7 @@ try {
 Write-SetupLog "LibreOffice setup helper starting (Silent=$Silent, STA=$([System.Threading.Thread]::CurrentThread.GetApartmentState()))"
 
 if (Test-LibreOfficePresent) {
-  Write-SetupLog "LibreOffice already present — skipping download."
+  Write-SetupLog "LibreOffice already present - skipping download."
   exit 0
 }
 
@@ -76,10 +78,10 @@ if (-not $Silent) {
   Add-Type -AssemblyName System.Windows.Forms | Out-Null
   $isPt = (Get-Culture).Name -like "pt*"
   if ($isPt) {
-    $title = "Converte Facil — LibreOffice"
+    $title = "Converte Facil - LibreOffice"
     $body = "O Converte Facil precisa do LibreOffice para converter Word e Excel.`n`nBaixar e instalar o LibreOffice agora? (~350 MB). O Windows pode pedir permissao."
   } else {
-    $title = "Converte Facil — LibreOffice"
+    $title = "Converte Facil - LibreOffice"
     $body = "Converte Facil needs LibreOffice to convert Word and Excel.`n`nDownload and install LibreOffice now? (~350 MB). Windows may ask for permission."
   }
   $answer = [System.Windows.Forms.MessageBox]::Show(
@@ -106,7 +108,7 @@ try {
     $wc.DownloadFile($MsiUrl, $msiPath)
     $wc.Dispose()
   } catch {
-    Write-SetupLog "WebClient failed ($($_.Exception.Message)) — trying BITS."
+    Write-SetupLog "WebClient failed ($($_.Exception.Message)) - trying BITS."
     Start-BitsTransfer -Source $MsiUrl -Destination $msiPath -ErrorAction Stop
   }
 
@@ -116,14 +118,14 @@ try {
   $size = (Get-Item -LiteralPath $msiPath).Length
   Write-SetupLog "Downloaded $size bytes"
 
-  Write-SetupLog "Verifying SHA256…"
+  Write-SetupLog "Verifying SHA256..."
   $actual = (Get-FileHash -LiteralPath $msiPath -Algorithm SHA256).Hash.ToLowerInvariant()
   if ($actual -ne $MsiSha256.ToLowerInvariant()) {
     throw "SHA256 mismatch for LibreOffice MSI. expected=$MsiSha256 actual=$actual"
   }
 
-  Write-SetupLog "Installing LibreOffice (may prompt for administrator permission)…"
-  # Do not use $args — it is a PowerShell automatic variable.
+  Write-SetupLog "Installing LibreOffice (may prompt for administrator permission)..."
+  # Do not use $args - it is a PowerShell automatic variable.
   $msiexecArgs = @(
     "/i", $msiPath,
     "/qn",
