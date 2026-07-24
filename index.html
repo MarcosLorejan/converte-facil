@@ -121,7 +121,10 @@
               Each page becomes one image file in a folder you choose.
             </p>
 
-            <div class="pdf-pick-row">
+            <div id="pdf-drop-zone" class="drop-zone" aria-describedby="pdf-drop-hint">
+              <p id="pdf-drop-hint" class="drop-hint" data-i18n="pdfDropHint">
+                Drop a PDF here, or click to choose a file
+              </p>
               <button type="button" id="pdf-pick" class="drop-browse" data-i18n="pdfPickButton">
                 Choose PDF
               </button>
@@ -280,7 +283,10 @@
             </div>
 
             <div id="docs-convert-block">
-              <div class="pdf-pick-row">
+              <div id="docs-drop-zone" class="drop-zone" aria-describedby="docs-drop-hint">
+                <p id="docs-drop-hint" class="drop-hint" data-i18n="docsDropHint">
+                  Drop a Word or Excel file here, or click to choose
+                </p>
                 <button type="button" id="docs-pick" class="drop-browse" data-i18n="docsPickButton">
                   Choose Word or Excel file
                 </button>
