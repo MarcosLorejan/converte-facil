@@ -112,7 +112,7 @@ fn validate_output_dir(path: &str) -> Result<&Path, String> {
 
 fn probe_binary(path: &Path, args: &[&str]) -> Option<String> {
     let mut command = Command::new(path);
-    hide_console_window(&mut command);
+    configure_soffice_process(&mut command, path);
     command.args(args);
     match run_probe_command(command) {
         Some(output) if output.status.success() => {
@@ -290,12 +290,7 @@ fn soffice_file_name() -> &'static str {
 /// Windows: prefer `soffice.com` (console) over `soffice.exe` (GUI). The `.exe`
 /// often yields no `--version` stdout and can hang when stdio is redirected.
 fn find_working_soffice_in_dir(dir: &Path) -> Option<(PathBuf, String)> {
-    #[cfg(windows)]
-    let names: &[&str] = &["soffice.com", "soffice.exe"];
-    #[cfg(not(windows))]
-    let names: &[&str] = &[soffice_file_name()];
-
-    for name in names {
+    for name in soffice_cli_names() {
         let candidate = dir.join(name);
         if candidate.is_file() {
             if let Some(detail) = probe_binary(&candidate, &["--version"]) {
@@ -858,10 +853,47 @@ fn unique_temp_dir(prefix: &str) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
+/// Embedded Python home under `program/python-core-*` (needed for headless on Windows).
+fn find_lo_python_home(program_dir: &Path) -> Option<PathBuf> {
+    let entries = std::fs::read_dir(program_dir).ok()?;
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        if name.starts_with("python-core-") && entry.path().is_dir() {
+            return Some(entry.path());
+        }
+    }
+    None
+}
+
+/// CLI names to try under a LibreOffice `program` directory.
+#[cfg(windows)]
+fn soffice_cli_names() -> &'static [&'static str] {
+    // Prefer `.com` — `.exe` is GUI and often yields no `--version` stdout.
+    &["soffice.com", "soffice.exe"]
+}
+
+#[cfg(not(windows))]
+fn soffice_cli_names() -> &'static [&'static str] {
+    &[soffice_file_name()]
+}
+
 fn prepare_soffice_command(program: &str) -> Command {
     let mut command = Command::new(program);
-    hide_console_window(&mut command);
+    configure_soffice_process(&mut command, Path::new(program));
     command
+}
+
+fn configure_soffice_process(command: &mut Command, program: &Path) {
+    hide_console_window(command);
+    if let Some(dir) = program.parent() {
+        command.current_dir(dir);
+        if let Some(python_home) = find_lo_python_home(dir) {
+            command.env("PYTHONHOME", python_home);
+            command.env_remove("PYTHONPATH");
+            command.env_remove("VIRTUAL_ENV");
+        }
+    }
 }
 
 enum CommandRunError {
@@ -1205,6 +1237,185 @@ mod tests {
     fn file_url_windows_style() {
         let url = path_to_file_url(Path::new(r"C:\Users\me\profile"));
         assert_eq!(url, "file:///C:/Users/me/profile");
+    }
+
+    #[test]
+    fn soffice_cli_names_prefer_com_on_windows() {
+        let names = super::soffice_cli_names();
+        assert!(!names.is_empty());
+        #[cfg(windows)]
+        assert_eq!(names[0], "soffice.com");
+        #[cfg(not(windows))]
+        assert_eq!(names[0], "soffice");
+    }
+
+    #[test]
+    fn find_lo_python_home_discovers_python_core_dir() {
+        let root = std::env::temp_dir().join(format!(
+            "converte-facil-pyhome-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        let core = root.join("python-core-3.12.13");
+        std::fs::create_dir_all(&core).unwrap();
+        let found = super::find_lo_python_home(&root).expect("python-core dir");
+        assert_eq!(found, core);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    /// Soft integration: when a system LibreOffice is present, `.com`/`soffice` must answer `--version`.
+    #[test]
+    fn system_libreoffice_version_probe_if_installed() {
+        let Some((path, detail)) = super::find_system_libreoffice() else {
+            return;
+        };
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        #[cfg(windows)]
+        assert!(
+            name == "soffice.com" || name == "soffice.exe",
+            "unexpected soffice binary {name}"
+        );
+        assert!(
+            detail.to_ascii_lowercase().contains("libreoffice"),
+            "version detail should mention LibreOffice, got: {detail}"
+        );
+    }
+
+    /// Soft integration: docx→PDF when LibreOffice is installed.
+    /// Fixture ZIP entries use `/` (required by OOXML; `\` paths fail to load).
+    #[test]
+    fn system_libreoffice_converts_docx_if_installed() {
+        if super::find_system_libreoffice().is_none() {
+            return;
+        }
+
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let dir = std::env::temp_dir().join(format!("converte-facil-docx-{stamp}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        let input = dir.join("sample.docx");
+        let output = dir.join("sample-converted.pdf");
+        write_minimal_docx(&input);
+
+        let result =
+            super::convert_document_to_pdf(input.to_str().unwrap(), output.to_str().unwrap());
+        assert!(
+            result.is_ok(),
+            "docx convert failed: {:?}",
+            result.err()
+        );
+        assert!(output.is_file(), "expected PDF at {}", output.display());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    fn write_minimal_docx(path: &Path) {
+        // Hand-rolled ZIP (store) with required OOXML parts.
+        let content_types = br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#;
+        let rels = br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#;
+        let document = br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body><w:p><w:r><w:t>Converte Facil test</w:t></w:r></w:p></w:body>
+</w:document>"#;
+
+        let mut file = std::fs::File::create(path).unwrap();
+        write_stored_zip(
+            &mut file,
+            &[
+                ("[Content_Types].xml", content_types),
+                ("_rels/.rels", rels),
+                ("word/document.xml", document),
+            ],
+        )
+        .unwrap();
+    }
+
+    fn write_stored_zip(
+        out: &mut impl std::io::Write,
+        entries: &[(&str, &[u8])],
+    ) -> std::io::Result<()> {
+        let mut offset = 0u32;
+        let mut central = Vec::new();
+        for (name, data) in entries {
+            let name_bytes = name.as_bytes();
+            let crc = crc32_ieee(data);
+            let local_header_size = 30 + name_bytes.len() as u32;
+            // local file header
+            out.write_all(&0x04034b50u32.to_le_bytes())?;
+            out.write_all(&20u16.to_le_bytes())?; // version needed
+            out.write_all(&0u16.to_le_bytes())?; // flags
+            out.write_all(&0u16.to_le_bytes())?; // method store
+            out.write_all(&0u16.to_le_bytes())?; // time
+            out.write_all(&0u16.to_le_bytes())?; // date
+            out.write_all(&crc.to_le_bytes())?;
+            out.write_all(&(data.len() as u32).to_le_bytes())?;
+            out.write_all(&(data.len() as u32).to_le_bytes())?;
+            out.write_all(&(name_bytes.len() as u16).to_le_bytes())?;
+            out.write_all(&0u16.to_le_bytes())?; // extra
+            out.write_all(name_bytes)?;
+            out.write_all(data)?;
+
+            // central directory header
+            central.extend_from_slice(&0x02014b50u32.to_le_bytes());
+            central.extend_from_slice(&20u16.to_le_bytes());
+            central.extend_from_slice(&20u16.to_le_bytes());
+            central.extend_from_slice(&0u16.to_le_bytes());
+            central.extend_from_slice(&0u16.to_le_bytes());
+            central.extend_from_slice(&0u16.to_le_bytes());
+            central.extend_from_slice(&0u16.to_le_bytes());
+            central.extend_from_slice(&crc.to_le_bytes());
+            central.extend_from_slice(&(data.len() as u32).to_le_bytes());
+            central.extend_from_slice(&(data.len() as u32).to_le_bytes());
+            central.extend_from_slice(&(name_bytes.len() as u16).to_le_bytes());
+            central.extend_from_slice(&0u16.to_le_bytes());
+            central.extend_from_slice(&0u16.to_le_bytes());
+            central.extend_from_slice(&0u16.to_le_bytes());
+            central.extend_from_slice(&0u16.to_le_bytes());
+            central.extend_from_slice(&0u32.to_le_bytes());
+            central.extend_from_slice(&offset.to_le_bytes());
+            central.extend_from_slice(name_bytes);
+
+            offset += local_header_size + data.len() as u32;
+        }
+        let central_size = central.len() as u32;
+        out.write_all(&central)?;
+        // end of central directory
+        out.write_all(&0x06054b50u32.to_le_bytes())?;
+        out.write_all(&0u16.to_le_bytes())?;
+        out.write_all(&0u16.to_le_bytes())?;
+        out.write_all(&(entries.len() as u16).to_le_bytes())?;
+        out.write_all(&(entries.len() as u16).to_le_bytes())?;
+        out.write_all(&central_size.to_le_bytes())?;
+        out.write_all(&offset.to_le_bytes())?;
+        out.write_all(&0u16.to_le_bytes())?;
+        Ok(())
+    }
+
+    fn crc32_ieee(data: &[u8]) -> u32 {
+        let mut crc = 0xffff_ffffu32;
+        for &b in data {
+            crc ^= u32::from(b);
+            for _ in 0..8 {
+                let mask = 0u32.wrapping_sub(crc & 1);
+                crc = (crc >> 1) ^ (0xedb8_8320 & mask);
+            }
+        }
+        !crc
     }
 
     #[test]

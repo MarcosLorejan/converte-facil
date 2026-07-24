@@ -126,11 +126,13 @@ try {
 
   Write-SetupLog "Installing LibreOffice (may prompt for administrator permission)..."
   # Do not use $args - it is a PowerShell automatic variable.
+  # ADDLOCAL=ALL is required: a default silent MSI can omit OOXML (docx/xlsx) filters.
   $msiexecArgs = @(
     "/i", $msiPath,
     "/qn",
     "/norestart",
     "ALLUSERS=1",
+    "ADDLOCAL=ALL",
     "CREATEDESKTOPLINK=0",
     "REGISTER_ALL_MSO_TYPES=0",
     "ISCHECKFORPRODUCTUPDATES=0",
@@ -162,6 +164,13 @@ try {
 
   if (-not (Test-LibreOfficePresent)) {
     throw "msiexec finished but soffice.exe was not found"
+  }
+
+  # Incomplete silent installs can ship Writer without MS Office filters.
+  $programDir = "${env:ProgramFiles}\LibreOffice\program"
+  $wordFilter = Join-Path $programDir "mswordlo.dll"
+  if (-not (Test-Path -LiteralPath $wordFilter)) {
+    throw "LibreOffice installed but Word filter (mswordlo.dll) is missing - try reinstalling with ADDLOCAL=ALL"
   }
 
   Write-SetupLog "LibreOffice installed successfully."
