@@ -60,12 +60,12 @@ Se quiser, mude o **Idioma** (English / Português) no topo da janela.
 
 ## 6. Converter Word ou Excel em PDF (opcional)
 
-O modo Documentos precisa do **LibreOffice** instalado no PC (ele não vem dentro do instalador do Converte Fácil).
+O modo Documentos precisa do **LibreOffice**. Se ele ainda não estiver no PC, use **Instalar LibreOffice** no app (pode pedir permissão do Windows). Alternativa: baixe no site oficial e clique em **Verificar de novo**.
 
 1. Clique em **Documentos**.
-2. Se o app disser que o LibreOffice não foi encontrado, use o link de download, instale o LibreOffice pelo site oficial e clique em **Verificar de novo**.
+2. Se o LibreOffice faltar, clique em **Instalar LibreOffice** e aguarde (ou use a página de download + **Verificar de novo**).
 3. Escolha um arquivo **Word (`.docx`)** ou **Excel (`.xlsx`)**.
-4. Clique em **Converter e salvar**, escolha a pasta e aguarde o PDF.
+4. Clique em **Converter para PDF**. O PDF é salvo ao lado do arquivo original.
 
 > **Espaço para captura de tela:** modo Documentos + guia do LibreOffice  
 > `docs/images/pt-06-documentos.png`

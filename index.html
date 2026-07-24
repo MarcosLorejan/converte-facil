@@ -296,28 +296,45 @@
             <div id="docs-libreoffice-guide" class="docs-guide" hidden>
               <h3 data-i18n="docsLoGuideTitle">Install LibreOffice to convert Word/Excel</h3>
               <p class="pdf-help" data-i18n="docsLoGuideBody">
-                Converte Fácil uses LibreOffice on this computer for documents.
-                It is free, and is not included in the Converte Fácil installer.
+                Converte Fácil can install free LibreOffice for you. Windows may ask for permission.
+                This is separate from the Converte Fácil installer and can take a few minutes.
               </p>
               <ol class="docs-guide-steps">
                 <li data-i18n="docsLoGuideStep1">
-                  Download LibreOffice from the official website.
+                  Click Install LibreOffice below.
                 </li>
                 <li data-i18n="docsLoGuideStep2">
-                  Run the installer (you may need an administrator password).
+                  Approve the Windows permission prompt if it appears, then wait.
                 </li>
                 <li data-i18n="docsLoGuideStep3">
-                  Come back here and click Check again.
+                  When it finishes, document conversion unlocks automatically.
                 </li>
               </ol>
               <div class="docs-guide-actions">
                 <button
                   type="button"
-                  id="docs-lo-download"
+                  id="docs-lo-install"
                   class="convert-button"
+                  data-i18n="docsLoInstall"
+                >
+                  Install LibreOffice
+                </button>
+                <button
+                  type="button"
+                  id="docs-lo-install-cancel"
+                  class="drop-browse convert-cancel-button"
+                  hidden
+                  data-i18n="convertCancelButton"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  id="docs-lo-download"
+                  class="drop-browse"
                   data-i18n="docsLoDownload"
                 >
-                  Open LibreOffice download
+                  Open download page instead
                 </button>
                 <button
                   type="button"
@@ -328,6 +345,7 @@
                   Check again
                 </button>
               </div>
+              <p id="docs-lo-install-status" class="convert-status" role="status" tabindex="-1" hidden></p>
               <p class="docs-guide-hint" data-i18n="docsLoWingetHint">
                 Advanced: winget install TheDocumentFoundation.LibreOffice
               </p>

@@ -19,6 +19,8 @@ const CODE_KEYS: Record<string, MessageKey> = {
   convert_failed: "convertFailed",
   convert_timeout: "convertTimeout",
   convert_cancelled: "convertCancelled",
+  winget_missing: "docsWingetMissing",
+  install_failed: "docsLoInstallFailed",
   invalid_format: "errorUnsupportedCodec",
   invalid_path: "errorFileUnreadable",
   no_inputs: "errorGeneric",

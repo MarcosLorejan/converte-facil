@@ -6,6 +6,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
+/// Max wall time for winget LibreOffice install.
+const LIBREOFFICE_INSTALL_TIMEOUT: Duration = Duration::from_secs(45 * 60);
+const LIBREOFFICE_WINGET_ID: &str = "TheDocumentFoundation.LibreOffice";
 /// Max wall time for a LibreOffice headless conversion before kill.
 const LIBREOFFICE_CONVERT_TIMEOUT: Duration = Duration::from_secs(180);
 /// Safety net for Magick jobs (user cancel is the primary abort path).
@@ -238,10 +241,23 @@ fn find_soffice_in_dir(dir: &Path) -> Option<PathBuf> {
     }
 }
 
-/// System LibreOffice only (ADR 0002 — not shipped in the default installer).
+/// LibreOffice from system install, PATH, or optional app-local cache (ADR 0002 C).
 fn find_system_libreoffice() -> Option<(PathBuf, String)> {
     #[cfg(windows)]
     {
+        // App-local cache (future extract / portable pin under %LOCALAPPDATA%).
+        if let Ok(local) = std::env::var("LOCALAPPDATA") {
+            let app_local = PathBuf::from(local)
+                .join("converte-facil")
+                .join("LibreOffice")
+                .join("program");
+            if let Some(path) = find_soffice_in_dir(&app_local) {
+                if let Some(detail) = probe_binary(&path, &["--version"]) {
+                    return Some((path, detail));
+                }
+            }
+        }
+
         let mut roots = Vec::new();
         for key in ["PROGRAMFILES", "PROGRAMFILES(X86)", "ProgramW6432"] {
             if let Ok(dir) = std::env::var(key) {
@@ -319,6 +335,77 @@ fn detect_libreoffice() -> ToolStatus {
             name: soffice_file_name().to_string(),
             detail: None,
             bundled: false,
+        }
+    }
+}
+
+fn find_winget() -> Option<PathBuf> {
+    #[cfg(windows)]
+    {
+        if let Ok(local) = std::env::var("LOCALAPPDATA") {
+            let candidate = PathBuf::from(local)
+                .join("Microsoft")
+                .join("WindowsApps")
+                .join("winget.exe");
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+    let status = probe_command(&["winget"], &["--version"]);
+    if status.available {
+        Some(PathBuf::from(status.name))
+    } else {
+        None
+    }
+}
+
+/// Install LibreOffice via winget when missing (ADR 0002 option C).
+/// Does not ship LO inside the Converte Fácil installer.
+pub fn install_libreoffice() -> Result<(), String> {
+    reset_conversion_cancel();
+
+    if detect_libreoffice().available {
+        let _ = refresh_engines();
+        return Ok(());
+    }
+
+    #[cfg(not(windows))]
+    {
+        return Err("winget_missing".into());
+    }
+
+    #[cfg(windows)]
+    {
+        let winget = find_winget().ok_or_else(|| "winget_missing".to_string())?;
+
+        let mut command = Command::new(&winget);
+        hide_console_window(&mut command);
+        command.args([
+            "install",
+            "--id",
+            LIBREOFFICE_WINGET_ID,
+            "-e",
+            "--accept-package-agreements",
+            "--accept-source-agreements",
+            "--disable-interactivity",
+        ]);
+
+        let output = match run_managed_command(command, Some(LIBREOFFICE_INSTALL_TIMEOUT)) {
+            Ok(o) => o,
+            Err(e) => return Err(map_command_run_error(e)),
+        };
+
+        let status = refresh_engines();
+        if status.libreoffice.available {
+            return Ok(());
+        }
+
+        let detail = tool_output_detail(&output.stderr, &output.stdout);
+        if detail.is_empty() {
+            Err("install_failed".into())
+        } else {
+            Err(format!("install_failed\n{detail}"))
         }
     }
 }
