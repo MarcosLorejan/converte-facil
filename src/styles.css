@@ -448,9 +448,13 @@ h1 {
 .convert-actions {
   margin: 0 0 1.5rem;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.65rem;
+}
+
+.open-folder-button {
+  min-height: 3.1rem;
 }
 
 .convert-button {

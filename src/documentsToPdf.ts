@@ -183,6 +183,7 @@ export function initDocumentsToPdf(
       busy = true;
       syncEnabled();
       convertButton.classList.add("is-busy");
+      openFolder?.hide();
       statusEl.hidden = false;
       statusEl.classList.remove("is-error", "is-success");
       statusEl.textContent = t(locale, "docsConvertProgress");
@@ -195,10 +196,12 @@ export function initDocumentsToPdf(
         });
         statusEl.classList.add("is-success");
         statusEl.textContent = t(locale, "docsConvertSuccess");
+        openFolder?.show(normalized, false);
       } catch (error) {
         const humanized = humanizeError(locale, error, "docsConvertFailed");
         statusEl.classList.add("is-error");
         statusEl.textContent = humanized.message;
+        openFolder?.hide();
         applyHumanizedError(errorEl, locale, humanized);
         if (parseInvokeError(error).code === "missing_libreoffice") {
           libreOfficeAvailable = false;
@@ -214,6 +217,7 @@ export function initDocumentsToPdf(
 
   setSelection(null);
   statusEl.hidden = true;
+  openFolder?.hide();
   syncGuide();
 
   return {
@@ -223,6 +227,7 @@ export function initDocumentsToPdf(
       syncEnabled();
     },
     refreshCopy: (locale) => {
+      openFolder?.refreshCopy(t(locale, "openOutputFolder"));
       if (!statusEl.hidden && convertButton.classList.contains("is-busy")) {
         statusEl.textContent = t(locale, "docsConvertProgress");
       }
