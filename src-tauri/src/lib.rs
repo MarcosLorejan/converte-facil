@@ -49,6 +49,11 @@ fn cancel_conversion() {
     engine::cancel_conversion()
 }
 
+#[tauri::command]
+fn install_libreoffice() -> Result<(), String> {
+    engine::install_libreoffice()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -68,7 +73,8 @@ pub fn run() {
             convert_document_to_pdf,
             path_exists,
             reset_conversion_cancel,
-            cancel_conversion
+            cancel_conversion,
+            install_libreoffice
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

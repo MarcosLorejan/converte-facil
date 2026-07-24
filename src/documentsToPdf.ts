@@ -45,6 +45,10 @@ export function initDocumentsToPdf(
   const statusEl = document.querySelector<HTMLElement>("#docs-convert-status");
   const selection = document.querySelector<HTMLElement>("#docs-selection");
   const guide = document.querySelector<HTMLElement>("#docs-libreoffice-guide");
+  const installButton =
+    document.querySelector<HTMLButtonElement>("#docs-lo-install");
+  const installStatus =
+    document.querySelector<HTMLElement>("#docs-lo-install-status");
   const downloadButton =
     document.querySelector<HTMLButtonElement>("#docs-lo-download");
   const checkButton =
@@ -55,6 +59,9 @@ export function initDocumentsToPdf(
   );
   const cancel = bindCancelButton(
     document.querySelector<HTMLButtonElement>("#docs-convert-cancel"),
+  );
+  const installCancel = bindCancelButton(
+    document.querySelector<HTMLButtonElement>("#docs-lo-install-cancel"),
   );
 
   if (
@@ -67,6 +74,8 @@ export function initDocumentsToPdf(
     !statusEl ||
     !selection ||
     !guide ||
+    !installButton ||
+    !installStatus ||
     !downloadButton ||
     !checkButton ||
     !convertBlock
@@ -76,6 +85,7 @@ export function initDocumentsToPdf(
 
   let docPath: string | null = null;
   let busy = false;
+  let installing = false;
   let libreOfficeAvailable = false;
 
   const syncGuide = () => {
@@ -93,10 +103,11 @@ export function initDocumentsToPdf(
   const syncEnabled = () => {
     const ready = libreOfficeAvailable && docPath !== null && !busy;
     convertButton.disabled = !ready;
-    pickButton.disabled = busy || !libreOfficeAvailable;
+    pickButton.disabled = busy || installing || !libreOfficeAvailable;
     clearButton.disabled = busy || docPath === null;
-    downloadButton.disabled = busy;
-    checkButton.disabled = busy;
+    installButton.disabled = installing || busy;
+    downloadButton.disabled = installing || busy;
+    checkButton.disabled = installing || busy;
   };
 
   const setSelection = (path: string | null) => {
@@ -192,6 +203,45 @@ export function initDocumentsToPdf(
     onCheckAgain();
   });
 
+  installButton.addEventListener("click", () => {
+    if (installing || busy) return;
+    void (async () => {
+      const locale = getLocale();
+      clearHumanizedError(errorEl);
+      installing = true;
+      syncEnabled();
+      installButton.classList.add("is-busy");
+      installCancel?.setBusy(true);
+      installStatus.hidden = false;
+      installStatus.classList.remove("is-error", "is-success");
+      installStatus.textContent = t(locale, "docsLoInstallProgress");
+      installStatus.focus();
+      await resetConversionCancel();
+
+      try {
+        await invoke("install_libreoffice");
+        installStatus.classList.add("is-success");
+        installStatus.textContent = t(locale, "docsLoInstallSuccess");
+        onCheckAgain();
+      } catch (error) {
+        if (isConvertCancelled(error)) {
+          installStatus.classList.add("is-error");
+          installStatus.textContent = t(locale, "convertCancelled");
+        } else {
+          const humanized = humanizeError(locale, error, "docsLoInstallFailed");
+          installStatus.classList.add("is-error");
+          installStatus.textContent = humanized.message;
+          applyHumanizedError(errorEl, locale, humanized);
+        }
+      } finally {
+        installing = false;
+        installButton.classList.remove("is-busy");
+        installCancel?.setBusy(false);
+        syncEnabled();
+      }
+    })();
+  });
+
   convertButton.addEventListener("click", () => {
     if (!docPath || !libreOfficeAvailable || busy) return;
     void (async () => {
@@ -263,8 +313,15 @@ export function initDocumentsToPdf(
     refreshCopy: (locale) => {
       openFolder?.refreshCopy(t(locale, "openOutputFolder"));
       cancel?.refreshCopy(t(locale, "convertCancelButton"));
+      installCancel?.refreshCopy(t(locale, "convertCancelButton"));
       if (!statusEl.hidden && convertButton.classList.contains("is-busy")) {
         statusEl.textContent = t(locale, "docsConvertProgress");
+      }
+      if (
+        !installStatus.hidden &&
+        installButton.classList.contains("is-busy")
+      ) {
+        installStatus.textContent = t(locale, "docsLoInstallProgress");
       }
     },
   };

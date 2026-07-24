@@ -44,10 +44,18 @@ also respect AGPL obligations for that component (including offering
 corresponding source for the Ghostscript version you ship).
 
 ================================================================================
-LibreOffice (not bundled)
+LibreOffice (not bundled in the installer)
 ================================================================================
-Documents mode expects a system install of LibreOffice (`soffice`). We do not
-ship LibreOffice binaries in the Windows installer. See docs/adr/0002-libreoffice-bundling.md.
+Documents mode needs LibreOffice (`soffice`). We do not ship LibreOffice
+binaries inside the Converte Fácil NSIS installer.
+
+On Windows, the app can install LibreOffice for the user via Windows Package
+Manager (`winget install TheDocumentFoundation.LibreOffice`). That install is
+provided by The Document Foundation / winget, not redistributed by us.
+
+Manual install: https://www.libreoffice.org/download/download-libreoffice/
+Strategy: docs/adr/0002-libreoffice-strategy.md
+LibreOffice license overview: https://www.libreoffice.org/licenses/
 
 ================================================================================
 Converte Fácil application code

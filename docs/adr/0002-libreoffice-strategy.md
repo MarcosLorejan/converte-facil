@@ -1,8 +1,8 @@
 # ADR 0002: LibreOffice strategy on Windows (bundle vs system)
 
-**Status:** Accepted  
+**Status:** Accepted (amended 2026-07-24 — prefer winget on-demand install)  
 **Date:** 2026-07-22  
-**Issue:** #16
+**Issue:** #16 / #85
 
 ## Context
 
@@ -76,26 +76,22 @@ Security: LibreOffice regularly publishes advisories. Owning the binary (A/C) me
 
 ## Decision
 
-For **Converte Fácil v2 (M5)**:
+**Amended 2026-07-24** (usability follow-up [#85](https://github.com/MarcosLorejan/converte-facil/issues/85)):
 
-1. **Do not embed LibreOffice in the default Windows installer** (reject option A as the default shipping model).
-2. **Prefer option B for the first v2 ship:** detect a system LibreOffice install; if absent, show a dedicated guided install UX (EN/PT) pointing at the official TDF Windows download; block document conversion with a clear message until `soffice` is found.
-3. **Treat option C as a follow-up** if real-user friction from the guided install is high: optional on-demand download of a pinned LibreOffice into app-local storage, reusing the same detection order (bundled/app-local → system → prompt).
+1. **Still do not embed LibreOffice in the default Windows installer** (reject option A as the default shipping model — size vs ADR 0001).
+2. **Prefer option C for Documents UX:** one-click install via **Windows Package Manager (`winget`)** when LibreOffice is missing (`TheDocumentFoundation.LibreOffice`), with progress + cancel in the Documents guide.
+3. **Keep option B as fallback:** official download page + “Check again” when winget is unavailable or install fails.
+4. Detection order: app-local cache under `%LOCALAPPDATA%\converte-facil\LibreOffice\` (reserved for a future extract pin) → well-known Program Files / PATH → guided install UX.
 
-Resolution order when implementing:
-
-1. App-local / previously downloaded engine (only if C is implemented later)
-2. Well-known Windows install paths (`Program Files\LibreOffice*\program\soffice.exe`) and PATH
-3. Guided prompt — never silent failure
+Original M5 ship used B-only; real-user friction justified promoting C without bloating the NSIS package.
 
 ## Consequences
 
-- Document conversion in v2 depends on LibreOffice being present on the machine (system or, later, app-local).
-- Installer size and Magick/GS sidecar story stay intact.
-- Engineering work for M5 centers on detection, headless invocation, profile isolation, and i18n copy — not on packaging a 355 MB MSI inside NSIS.
-- `third-party/NOTICE` grows only when we distribute or cache LibreOffice binaries ourselves (A or C); for B we still document the dependency in product docs.
-- Auto-update remains feasible for the core app without multi-hundred-MB LibreOffice payloads on every release.
-- If we later adopt C, pin versions in a fetch script (analogue to `scripts/fetch-sidecars.ps1`), verify hashes, and document disk/network expectations in the user guide.
+- Document conversion works after a guided in-app install for typical Windows 10/11 PCs with winget.
+- Installer size and Magick/GS sidecar story stay intact (LO still not inside NSIS).
+- Winget install may show a Windows UAC / package consent UI — expected, not a console flash.
+- We do **not** redistribute LibreOffice binaries ourselves when using winget; NOTICE documents the dependency and install path.
+- A future pin + extract into `%LOCALAPPDATA%` remains compatible with the detection order above.
 
 ## Alternatives considered (summary)
 
