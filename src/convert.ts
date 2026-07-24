@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
 import {
   bindCancelButton,
   isConvertCancelled,
@@ -15,32 +14,8 @@ import { extensionForFormat, type OutputFormatId } from "./formats";
 import { type SelectedImage } from "./images";
 import { t, type Locale } from "./i18n";
 import { bindOpenFolderButton, type OpenFolderControl } from "./openOutput";
-import { joinPath, stemFromPath } from "./pathHelpers";
-
-async function uniqueFileName(
-  dir: string,
-  stem: string,
-  ext: string,
-  used: Set<string>,
-): Promise<{ fileName: string; renamed: boolean }> {
-  let candidate = `${stem}.${ext}`;
-  let index = 2;
-  let renamed = false;
-  while (true) {
-    const lower = candidate.toLowerCase();
-    if (!used.has(lower)) {
-      const fullPath = joinPath(dir, candidate);
-      const exists = await invoke<boolean>("path_exists", { path: fullPath });
-      if (!exists) {
-        used.add(lower);
-        return { fileName: candidate, renamed };
-      }
-    }
-    renamed = true;
-    candidate = `${stem}-${index}.${ext}`;
-    index += 1;
-  }
-}
+import { uniqueConvertedSibling } from "./outputPaths";
+import { parentDir } from "./pathHelpers";
 
 function showStatusMessage(el: HTMLElement, message: string): void {
   el.replaceChildren();
@@ -130,19 +105,6 @@ export async function runBatchConversion(options: {
   const { locale, queue, format, ui, setItemStatus, resetStatuses } = options;
   if (queue.length === 0) return;
 
-  let outputDir: string | string[] | null;
-  try {
-    outputDir = await open({
-      directory: true,
-      multiple: false,
-      title: t(locale, "convertPickFolder"),
-    });
-  } catch {
-    return;
-  }
-
-  if (!outputDir || Array.isArray(outputDir)) return;
-
   resetStatuses();
   ui.setBusy(true);
   ui.openFolder?.hide();
@@ -152,24 +114,29 @@ export async function runBatchConversion(options: {
   await resetConversionCancel();
 
   const ext = extensionForFormat(format);
-  const usedNames = new Set<string>();
+  const usedByDir = new Map<string, Set<string>>();
   let successCount = 0;
   let failCount = 0;
   let renamedCount = 0;
   let lastHumanized: HumanizedError | null = null;
   let cancelled = false;
+  let lastOutputDir: string | null = null;
 
   try {
     for (const item of queue) {
       setItemStatus(item.path, "converting");
-      const { fileName, renamed } = await uniqueFileName(
-        outputDir,
-        stemFromPath(item.path),
+      const dir = parentDir(item.path);
+      let used = usedByDir.get(dir);
+      if (!used) {
+        used = new Set();
+        usedByDir.set(dir, used);
+      }
+      const { path: outputPath, renamed } = await uniqueConvertedSibling(
+        item.path,
         ext,
-        usedNames,
+        used,
       );
       if (renamed) renamedCount += 1;
-      const outputPath = joinPath(outputDir, fileName);
 
       try {
         await invoke("convert_image", {
@@ -178,6 +145,7 @@ export async function runBatchConversion(options: {
         });
         setItemStatus(item.path, "success");
         successCount += 1;
+        lastOutputDir = dir;
       } catch (error) {
         if (isConvertCancelled(error)) {
           cancelled = true;
@@ -214,7 +182,7 @@ export async function runBatchConversion(options: {
       const note =
         renamedCount > 0 ? ` ${t(locale, "convertRenamedNote")}` : "";
       showStatusMessage(ui.status, `${base}${note}`);
-      ui.openFolder?.show(outputDir, true);
+      if (lastOutputDir) ui.openFolder?.show(lastOutputDir, true);
     } else if (successCount === 0) {
       ui.status.classList.add("is-error");
       ui.openFolder?.hide();
@@ -230,7 +198,7 @@ export async function runBatchConversion(options: {
       );
     } else {
       ui.status.classList.add("is-error");
-      ui.openFolder?.show(outputDir, true);
+      if (lastOutputDir) ui.openFolder?.show(lastOutputDir, true);
       showStatusWithOptionalDetails(
         ui.status,
         locale,

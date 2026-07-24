@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import {
   bindCancelButton,
   isConvertCancelled,
@@ -18,6 +18,7 @@ import {
 } from "./images";
 import { t, type Locale } from "./i18n";
 import { bindOpenFolderButton } from "./openOutput";
+import { uniqueConvertedSibling } from "./outputPaths";
 
 type QueueItem = SelectedImage;
 
@@ -216,21 +217,10 @@ export function initImagesToPdf(
       const locale = getLocale();
       clearError();
 
-      let outputPath: string | null;
-      try {
-        outputPath = await save({
-          filters: [{ name: "PDF", extensions: ["pdf"] }],
-          defaultPath: "photos.pdf",
-          title: t(locale, "imagesToPdfSaveTitle"),
-        });
-      } catch {
-        return;
-      }
-      if (!outputPath) return;
-
-      const normalized = outputPath.toLowerCase().endsWith(".pdf")
-        ? outputPath
-        : `${outputPath}.pdf`;
+      const { path: outputPath } = await uniqueConvertedSibling(
+        queue[0].path,
+        "pdf",
+      );
 
       busy = true;
       syncEnabled();
@@ -247,11 +237,11 @@ export function initImagesToPdf(
       try {
         await invoke("combine_images_to_pdf", {
           inputPaths: queue.map((item) => item.path),
-          outputPath: normalized,
+          outputPath,
         });
         statusEl.classList.add("is-success");
         statusEl.textContent = t(locale, "imagesToPdfSuccess");
-        openFolder?.show(normalized, false);
+        openFolder?.show(outputPath, false);
         statusEl.focus();
       } catch (error) {
         const humanized = humanizeError(locale, error, "imagesToPdfFailed");
