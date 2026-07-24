@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import type { DropTarget } from "./appDragDrop";
 import {
@@ -16,7 +16,7 @@ import {
 import { fileNameFromPath } from "./images";
 import { t, type Locale } from "./i18n";
 import { bindOpenFolderButton } from "./openOutput";
-import { stemFromPath } from "./pathHelpers";
+import { uniqueConvertedSibling } from "./outputPaths";
 
 const LIBREOFFICE_DOWNLOAD_URL =
   "https://www.libreoffice.org/download/download-libreoffice/";
@@ -198,21 +198,7 @@ export function initDocumentsToPdf(
       const locale = getLocale();
       clearHumanizedError(errorEl);
 
-      let outputPath: string | null;
-      try {
-        outputPath = await save({
-          filters: [{ name: "PDF", extensions: ["pdf"] }],
-          defaultPath: `${stemFromPath(docPath)}.pdf`,
-          title: t(locale, "docsSaveTitle"),
-        });
-      } catch {
-        return;
-      }
-      if (!outputPath) return;
-
-      const normalized = outputPath.toLowerCase().endsWith(".pdf")
-        ? outputPath
-        : `${outputPath}.pdf`;
+      const { path: outputPath } = await uniqueConvertedSibling(docPath, "pdf");
 
       busy = true;
       syncEnabled();
@@ -228,11 +214,11 @@ export function initDocumentsToPdf(
       try {
         await invoke("convert_document_to_pdf", {
           inputPath: docPath,
-          outputPath: normalized,
+          outputPath,
         });
         statusEl.classList.add("is-success");
         statusEl.textContent = t(locale, "docsConvertSuccess");
-        openFolder?.show(normalized, false);
+        openFolder?.show(outputPath, false);
       } catch (error) {
         const humanized = humanizeError(locale, error, "docsConvertFailed");
         statusEl.classList.add("is-error");

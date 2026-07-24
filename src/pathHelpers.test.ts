@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { joinPath, stemFromPath } from "./pathHelpers";
+import {
+  convertedStem,
+  joinPath,
+  parentDir,
+  stemFromPath,
+} from "./pathHelpers";
 
 describe("stemFromPath", () => {
   it("strips the final extension", () => {
@@ -13,6 +18,23 @@ describe("stemFromPath", () => {
 
   it("only strips the last extension", () => {
     expect(stemFromPath("archive.tar.gz")).toBe("archive.tar");
+  });
+});
+
+describe("parentDir", () => {
+  it("returns the parent for Windows and POSIX paths", () => {
+    expect(parentDir("C:\\Users\\me\\photo.jpg")).toBe("C:\\Users\\me");
+    expect(parentDir("/home/me/photo.jpg")).toBe("/home/me");
+  });
+
+  it("keeps a Windows drive root", () => {
+    expect(parentDir("C:\\photo.jpg")).toBe("C:\\");
+  });
+});
+
+describe("convertedStem", () => {
+  it("appends -converted", () => {
+    expect(convertedStem("foto-1")).toBe("foto-1-converted");
   });
 });
 

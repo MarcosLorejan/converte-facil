@@ -14,6 +14,7 @@ import {
 import { fileNameFromPath } from "./images";
 import { t, type Locale } from "./i18n";
 import { bindOpenFolderButton } from "./openOutput";
+import { parentDir } from "./pathHelpers";
 
 export type PdfImageFormat = "png" | "jpg";
 export type PdfQualityPreset = "small" | "normal" | "high";
@@ -226,17 +227,7 @@ export function initPdfToImages(
       const locale = getLocale();
       clearError();
 
-      let outputDir: string | string[] | null;
-      try {
-        outputDir = await open({
-          directory: true,
-          multiple: false,
-          title: t(locale, "pdfPickFolder"),
-        });
-      } catch {
-        return;
-      }
-      if (!outputDir || Array.isArray(outputDir)) return;
+      const outputDir = parentDir(pdfPath);
 
       busy = true;
       syncEnabled();
