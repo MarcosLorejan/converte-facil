@@ -7,7 +7,25 @@ const IMAGE_EXTENSIONS = new Set([
   "tif",
   "tiff",
   "bmp",
+  "heic",
+  "heif",
+  "avif",
 ]);
+
+/** Extensions for native file-picker filters (Images mode / images→PDF). */
+export const IMAGE_DIALOG_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "gif",
+  "tif",
+  "tiff",
+  "bmp",
+  "heic",
+  "heif",
+  "avif",
+] as const;
 
 export type SelectedImage = {
   path: string;

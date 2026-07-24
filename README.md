@@ -16,7 +16,7 @@ Built so anyone can use it — large UI, clear steps, and language options (Engl
 
 ## What it does
 
-- Convert images (JPG, PNG, WEBP, GIF, TIFF, BMP, …)
+- Convert images (JPG, PNG, WEBP, HEIC, AVIF, GIF, TIFF, BMP, …)
 - Convert PDF ↔ image (via Ghostscript)
 - Word (`.docx`) / Excel (`.xlsx`) → PDF via a local LibreOffice install
 - Everything runs offline on your machine
