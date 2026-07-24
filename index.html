@@ -156,6 +156,30 @@
               </div>
             </div>
 
+            <div class="format-picker pdf-quality-picker" aria-labelledby="pdf-quality-title">
+              <h3 id="pdf-quality-title" data-i18n="pdfQualityTitle">Image quality</h3>
+              <p class="format-help" data-i18n="pdfQualityHelp">
+                Normal matches the usual size and clarity. Small is lighter; High is sharper and larger.
+              </p>
+              <div id="pdf-quality-list" class="format-list" role="group" aria-labelledby="pdf-quality-title">
+                <button type="button" class="format-option" data-pdf-quality="small" data-i18n="pdfQualitySmall" disabled>
+                  Small
+                </button>
+                <button
+                  type="button"
+                  class="format-option is-selected"
+                  data-pdf-quality="normal"
+                  data-i18n="pdfQualityNormal"
+                  disabled
+                >
+                  Normal
+                </button>
+                <button type="button" class="format-option" data-pdf-quality="high" data-i18n="pdfQualityHigh" disabled>
+                  High
+                </button>
+              </div>
+            </div>
+
             <div class="convert-actions">
               <button
                 type="button"

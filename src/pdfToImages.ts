@@ -11,9 +11,14 @@ import { t, type Locale } from "./i18n";
 import { bindOpenFolderButton } from "./openOutput";
 
 export type PdfImageFormat = "png" | "jpg";
+export type PdfQualityPreset = "small" | "normal" | "high";
 
 function isPdfPath(path: string): boolean {
   return path.toLowerCase().endsWith(".pdf");
+}
+
+function isPdfQuality(value: string | undefined): value is PdfQualityPreset {
+  return value === "small" || value === "normal" || value === "high";
 }
 
 export type PdfToImagesController = DropTarget & {
@@ -30,6 +35,7 @@ export function initPdfToImages(
   const fileNameEl = document.querySelector<HTMLElement>("#pdf-file-name");
   const errorEl = document.querySelector<HTMLElement>("#pdf-error");
   const formatList = document.querySelector<HTMLElement>("#pdf-format-list");
+  const qualityList = document.querySelector<HTMLElement>("#pdf-quality-list");
   const convertButton =
     document.querySelector<HTMLButtonElement>("#pdf-convert-button");
   const statusEl = document.querySelector<HTMLElement>("#pdf-convert-status");
@@ -45,6 +51,7 @@ export function initPdfToImages(
     !fileNameEl ||
     !errorEl ||
     !formatList ||
+    !qualityList ||
     !convertButton ||
     !statusEl ||
     !selection
@@ -54,12 +61,16 @@ export function initPdfToImages(
 
   let pdfPath: string | null = null;
   let format: PdfImageFormat | null = null;
+  let quality: PdfQualityPreset = "normal";
   let busy = false;
   let lastRawError: unknown = null;
   let plainErrorKey: "pdfUnsupported" | null = null;
 
   const formatButtons = Array.from(
     formatList.querySelectorAll<HTMLButtonElement>("[data-pdf-format]"),
+  );
+  const qualityButtons = Array.from(
+    qualityList.querySelectorAll<HTMLButtonElement>("[data-pdf-quality]"),
   );
 
   const showPlainError = (key: "pdfUnsupported") => {
@@ -89,8 +100,20 @@ export function initPdfToImages(
     formatButtons.forEach((button) => {
       button.disabled = pdfPath === null || busy;
     });
+    qualityButtons.forEach((button) => {
+      button.disabled = pdfPath === null || busy;
+    });
     pickButton.disabled = busy;
     clearButton.disabled = busy || pdfPath === null;
+  };
+
+  const syncQualitySelection = () => {
+    qualityButtons.forEach((button) => {
+      button.classList.toggle(
+        "is-selected",
+        button.dataset.pdfQuality === quality,
+      );
+    });
   };
 
   const setSelection = (path: string | null) => {
@@ -104,7 +127,9 @@ export function initPdfToImages(
       selection.hidden = true;
       dropZone.classList.remove("has-file");
       format = null;
+      quality = "normal";
       formatButtons.forEach((button) => button.classList.remove("is-selected"));
+      syncQualitySelection();
     }
     syncEnabled();
   };
@@ -150,6 +175,16 @@ export function initPdfToImages(
         el.classList.toggle("is-selected", el === button);
       });
       syncEnabled();
+    });
+  });
+
+  qualityButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (pdfPath === null || busy) return;
+      const value = button.dataset.pdfQuality;
+      if (!isPdfQuality(value)) return;
+      quality = value;
+      syncQualitySelection();
     });
   });
 
@@ -212,6 +247,7 @@ export function initPdfToImages(
           inputPath: pdfPath,
           outputDir,
           format,
+          quality,
         });
         const folderName = fileNameFromPath(result.outputDir);
         statusEl.classList.add("is-success");
@@ -237,6 +273,7 @@ export function initPdfToImages(
   });
 
   setSelection(null);
+  syncQualitySelection();
   statusEl.hidden = true;
   openFolder?.hide();
 
@@ -254,6 +291,16 @@ export function initPdfToImages(
       formatButtons.forEach((button) => {
         const key = button.dataset.i18n;
         if (key === "formatPng" || key === "formatJpg") {
+          button.textContent = t(locale, key);
+        }
+      });
+      qualityButtons.forEach((button) => {
+        const key = button.dataset.i18n;
+        if (
+          key === "pdfQualitySmall" ||
+          key === "pdfQualityNormal" ||
+          key === "pdfQualityHigh"
+        ) {
           button.textContent = t(locale, key);
         }
       });

@@ -18,8 +18,10 @@ fn convert_pdf_to_images(
     input_path: String,
     output_dir: String,
     format: String,
+    quality: Option<String>,
 ) -> Result<PdfToImagesResult, String> {
-    engine::convert_pdf_to_images(&input_path, &output_dir, &format)
+    let quality = quality.as_deref().unwrap_or("normal");
+    engine::convert_pdf_to_images(&input_path, &output_dir, &format, quality)
 }
 
 #[tauri::command]

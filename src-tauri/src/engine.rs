@@ -491,15 +491,19 @@ pub struct PdfToImagesResult {
 /// Convert each PDF page into an image file under a unique subfolder of `output_dir`.
 /// Writes `page-001.ext`, `page-002.ext`, … (1-based) so existing files are never overwritten.
 /// `format` must be `png` or `jpg`.
+/// `quality` is `small` | `normal` | `high` (default `normal` = density 150, JPG quality 90).
 pub fn convert_pdf_to_images(
     input_path: &str,
     output_dir: &str,
     format: &str,
+    quality: &str,
 ) -> Result<PdfToImagesResult, String> {
     let ext = match format {
         "png" | "jpg" => format,
         _ => return Err("invalid_format".into()),
     };
+
+    let (density, jpg_quality) = pdf_render_settings(quality)?;
 
     validate_existing_file(input_path)?;
     validate_output_dir(output_dir)?;
@@ -528,13 +532,13 @@ pub fn convert_pdf_to_images(
     let mut command = prepare_command(&engines.imagemagick.name);
     command
         .arg("-density")
-        .arg("150")
+        .arg(density.to_string())
         .arg(input_path)
         .arg("-scene")
         .arg("1");
 
     if ext == "jpg" {
-        command.arg("-quality").arg("90");
+        command.arg("-quality").arg(jpg_quality.to_string());
     }
 
     let output = command
@@ -559,6 +563,17 @@ pub fn convert_pdf_to_images(
         page_count,
         output_dir: pages_dir_str,
     })
+}
+
+/// Map UI quality presets to ImageMagick `-density` and JPG `-quality`.
+/// `normal` keeps the historic defaults (150 DPI / quality 90).
+fn pdf_render_settings(quality: &str) -> Result<(u32, u32), String> {
+    match quality {
+        "small" => Ok((96, 75)),
+        "normal" | "" => Ok((150, 90)),
+        "high" => Ok((300, 95)),
+        _ => Err("invalid_format".into()),
+    }
 }
 
 /// Combine image files into a single PDF at `output_path`.
@@ -851,7 +866,7 @@ pub fn convert_document_to_pdf(input_path: &str, output_path: &str) -> Result<()
 mod tests {
     use super::{
         classify_pdf_tool_failure, first_line, is_supported_document, path_looks_unsafe,
-        path_to_file_url, tool_error, tool_output_detail, unique_child_dir,
+        path_to_file_url, pdf_render_settings, tool_error, tool_output_detail, unique_child_dir,
         validate_absolute_path, validate_output_file_path,
     };
     use std::path::Path;
@@ -938,6 +953,15 @@ mod tests {
         let second = unique_child_dir(&parent, "report-pages").unwrap();
         assert!(second.ends_with("report-pages-2"));
         let _ = std::fs::remove_dir_all(&parent);
+    }
+
+    #[test]
+    fn pdf_render_settings_presets() {
+        assert_eq!(pdf_render_settings("small").unwrap(), (96, 75));
+        assert_eq!(pdf_render_settings("normal").unwrap(), (150, 90));
+        assert_eq!(pdf_render_settings("").unwrap(), (150, 90));
+        assert_eq!(pdf_render_settings("high").unwrap(), (300, 95));
+        assert!(pdf_render_settings("ultra").is_err());
     }
 
     #[test]
