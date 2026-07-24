@@ -10,6 +10,7 @@ import {
 import { fileNameFromPath } from "./images";
 import { t, type Locale } from "./i18n";
 import { bindOpenFolderButton } from "./openOutput";
+import { stemFromPath } from "./pathHelpers";
 
 const LIBREOFFICE_DOWNLOAD_URL =
   "https://www.libreoffice.org/download/download-libreoffice/";
@@ -17,12 +18,6 @@ const LIBREOFFICE_DOWNLOAD_URL =
 function isOfficePath(path: string): boolean {
   const lower = path.toLowerCase();
   return lower.endsWith(".docx") || lower.endsWith(".xlsx");
-}
-
-function stemFromPath(path: string): string {
-  const name = fileNameFromPath(path);
-  const dot = name.lastIndexOf(".");
-  return dot > 0 ? name.slice(0, dot) : name;
 }
 
 export type DocumentsToPdfController = {
