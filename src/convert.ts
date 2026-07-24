@@ -7,22 +7,10 @@ import {
   type HumanizedError,
 } from "./errors";
 import { extensionForFormat, type OutputFormatId } from "./formats";
-import { fileNameFromPath, type SelectedImage } from "./images";
+import { type SelectedImage } from "./images";
 import { t, type Locale } from "./i18n";
 import { bindOpenFolderButton, type OpenFolderControl } from "./openOutput";
-
-function stemFromPath(path: string): string {
-  const name = fileNameFromPath(path);
-  const dot = name.lastIndexOf(".");
-  return dot > 0 ? name.slice(0, dot) : name;
-}
-
-function joinPath(dir: string, name: string): string {
-  const endsWithSep = dir.endsWith("/") || dir.endsWith("\\");
-  if (endsWithSep) return `${dir}${name}`;
-  const sep = dir.includes("\\") ? "\\" : "/";
-  return `${dir}${sep}${name}`;
-}
+import { joinPath, stemFromPath } from "./pathHelpers";
 
 async function uniqueFileName(
   dir: string,
