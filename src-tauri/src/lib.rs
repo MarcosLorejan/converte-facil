@@ -5,7 +5,7 @@ use tauri::Manager;
 
 #[tauri::command]
 fn get_engine_status() -> EngineStatus {
-    engine::detect_engines()
+    engine::refresh_engines()
 }
 
 #[tauri::command]
