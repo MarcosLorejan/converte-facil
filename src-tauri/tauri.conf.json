@@ -64,7 +64,8 @@
     "resources": {
       "sidecars/imagemagick/": "sidecars/imagemagick/",
       "sidecars/ghostscript/": "sidecars/ghostscript/",
-      "../third-party/": "third-party/"
+      "../third-party/": "third-party/",
+      "../scripts/install-libreoffice-setup.ps1": "install-libreoffice-setup.ps1"
     },
     "windows": {
       "nsis": {
@@ -72,7 +73,8 @@
         "languages": ["English", "PortugueseBR"],
         "displayLanguageSelector": true,
         "startMenuFolder": "Converte Facil",
-        "installerIcon": "icons/icon.ico"
+        "installerIcon": "icons/icon.ico",
+        "installerHooks": "./windows/hooks.nsh"
       }
     }
   }
