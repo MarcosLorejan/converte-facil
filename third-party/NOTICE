@@ -44,17 +44,20 @@ also respect AGPL obligations for that component (including offering
 corresponding source for the Ghostscript version you ship).
 
 ================================================================================
-LibreOffice (not bundled in the installer)
+LibreOffice (downloaded during setup; not embedded in the NSIS payload)
 ================================================================================
-Documents mode needs LibreOffice (`soffice`). We do not ship LibreOffice
-binaries inside the Converte Fácil NSIS installer.
+Documents mode needs LibreOffice (`soffice`). The Converte Fácil NSIS package does
+not embed the ~350 MB LibreOffice MSI. After installing app files, the setup may
+download a pinned MSI from Document Foundation and silent-install it
+(see scripts/install-libreoffice-setup.ps1 and src-tauri/windows/hooks.nsh).
 
-On Windows, the app can install LibreOffice for the user via Windows Package
-Manager (`winget install TheDocumentFoundation.LibreOffice`). That install is
-provided by The Document Foundation / winget, not redistributed by us.
+Pinned Windows MSI (bump carefully; keep SHA256 in sync with winget):
+  LibreOffice 26.2.4 Win x86-64
+  https://download.documentfoundation.org/libreoffice/stable/26.2.4/win/x86_64/LibreOffice_26.2.4_Win_x86-64.msi
+  SHA256: 202f26cda071c5aa4996a5a28412fddceb3891dceb0366982c62650456c0730f
 
-Manual install: https://www.libreoffice.org/download/download-libreoffice/
-Strategy: docs/adr/0002-libreoffice-strategy.md
+In-app fallback: winget (`TheDocumentFoundation.LibreOffice`) or the official
+download page. Strategy: docs/adr/0002-libreoffice-strategy.md
 LibreOffice license overview: https://www.libreoffice.org/licenses/
 
 ================================================================================

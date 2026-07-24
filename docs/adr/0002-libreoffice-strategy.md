@@ -76,14 +76,14 @@ Security: LibreOffice regularly publishes advisories. Owning the binary (A/C) me
 
 ## Decision
 
-**Amended 2026-07-24** (usability follow-up [#85](https://github.com/MarcosLorejan/converte-facil/issues/85)):
+**Amended 2026-07-24** (usability follow-up [#85](https://github.com/MarcosLorejan/converte-facil/issues/85) / setup MSI):
 
-1. **Still do not embed LibreOffice in the default Windows installer** (reject option A as the default shipping model — size vs ADR 0001).
-2. **Prefer option C for Documents UX:** one-click install via **Windows Package Manager (`winget`)** when LibreOffice is missing (`TheDocumentFoundation.LibreOffice`), with progress + cancel in the Documents guide.
-3. **Keep option B as fallback:** official download page + “Check again” when winget is unavailable or install fails.
-4. Detection order: app-local cache under `%LOCALAPPDATA%\converte-facil\LibreOffice\` (reserved for a future extract pin) → well-known Program Files / PATH → guided install UX.
+1. **Still do not embed the LibreOffice MSI inside the NSIS payload** (keeps the Converte Fácil download small).
+2. **During NSIS setup (preferred):** after app files are copied, run `install-libreoffice-setup.ps1` (POSTINSTALL hook) to download a **pinned** LibreOffice Windows x64 MSI, verify SHA256, and silent-install via `msiexec` (may prompt UAC). Interactive setups ask Yes/No first; silent `/S` installs without that prompt.
+3. **In-app fallback (option C / winget + download page):** if setup skipped or failed, Documents mode still offers **Install LibreOffice** (`winget`) and the official download page.
+4. Detection order: app-local cache under `%LOCALAPPDATA%\converte-facil\LibreOffice\` → Program Files / PATH → guided in-app UX.
 
-Original M5 ship used B-only; real-user friction justified promoting C without bloating the NSIS package.
+Original M5 ship used B-only; usability friction justified promoting setup-time MSI download without bloating the NSIS package.
 
 ## Consequences
 
