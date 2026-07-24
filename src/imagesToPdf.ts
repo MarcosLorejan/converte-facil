@@ -1,6 +1,11 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import {
+  bindCancelButton,
+  isConvertCancelled,
+  resetConversionCancel,
+} from "./cancelConvert";
+import {
   applyHumanizedError,
   clearHumanizedError,
   humanizeError,
@@ -33,6 +38,9 @@ export function initImagesToPdf(
   const statusEl = document.querySelector<HTMLElement>("#images-to-pdf-status");
   const openFolder = bindOpenFolderButton(
     document.querySelector<HTMLButtonElement>("#images-to-pdf-open-folder"),
+  );
+  const cancel = bindCancelButton(
+    document.querySelector<HTMLButtonElement>("#images-to-pdf-cancel"),
   );
 
   if (!pickButton || !errorEl || !queueRoot || !list || !convertButton || !statusEl) {
@@ -227,12 +235,14 @@ export function initImagesToPdf(
       busy = true;
       syncEnabled();
       convertButton.classList.add("is-busy");
+      cancel?.setBusy(true);
       openFolder?.hide();
       statusEl.hidden = false;
       statusEl.classList.remove("is-error", "is-success");
       statusEl.replaceChildren();
       statusEl.textContent = t(locale, "imagesToPdfProgress");
       renderQueue();
+      await resetConversionCancel();
 
       try {
         await invoke("combine_images_to_pdf", {
@@ -247,14 +257,20 @@ export function initImagesToPdf(
         const humanized = humanizeError(locale, error, "imagesToPdfFailed");
         statusEl.classList.add("is-error");
         statusEl.replaceChildren();
-        statusEl.textContent = humanized.message;
+        statusEl.textContent = isConvertCancelled(error)
+          ? t(locale, "convertCancelled")
+          : humanized.message;
         openFolder?.hide();
         statusEl.focus();
-        showInvokeError(error, locale);
+        if (!isConvertCancelled(error)) {
+          showInvokeError(error, locale);
+        }
       } finally {
         busy = false;
         convertButton.classList.remove("is-busy");
+        cancel?.setBusy(false);
         renderQueue();
+        syncEnabled();
       }
     })();
   });
@@ -266,6 +282,7 @@ export function initImagesToPdf(
   return {
     refreshCopy: (locale) => {
       openFolder?.refreshCopy(t(locale, "openOutputFolder"));
+      cancel?.refreshCopy(t(locale, "convertCancelButton"));
       renderQueue();
       if (!statusEl.hidden && convertButton.classList.contains("is-busy")) {
         statusEl.replaceChildren();

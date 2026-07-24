@@ -39,6 +39,16 @@ fn path_exists(path: String) -> bool {
     engine::path_exists(&path)
 }
 
+#[tauri::command]
+fn reset_conversion_cancel() {
+    engine::reset_conversion_cancel()
+}
+
+#[tauri::command]
+fn cancel_conversion() {
+    engine::cancel_conversion()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -56,7 +66,9 @@ pub fn run() {
             convert_pdf_to_images,
             combine_images_to_pdf,
             convert_document_to_pdf,
-            path_exists
+            path_exists,
+            reset_conversion_cancel,
+            cancel_conversion
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

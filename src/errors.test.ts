@@ -41,6 +41,11 @@ describe("humanizeError", () => {
     expect(pt.message).toMatch(/demorou/i);
   });
 
+  it("maps convert_cancelled", () => {
+    const en = humanizeError("en", "convert_cancelled", "convertFailed");
+    expect(en.message.toLowerCase()).toMatch(/cancel/);
+  });
+
   it("uses the caller fallback for generic convert_failed", () => {
     const result = humanizeError("en", "convert_failed", "docsConvertFailed");
     expect(result.message).toMatch(/could not convert this document/i);

@@ -2,11 +2,19 @@ use serde::Serialize;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 /// Max wall time for a LibreOffice headless conversion before kill.
 const LIBREOFFICE_CONVERT_TIMEOUT: Duration = Duration::from_secs(180);
+/// Safety net for Magick jobs (user cancel is the primary abort path).
+const MAGICK_CONVERT_TIMEOUT: Duration = Duration::from_secs(30 * 60);
+
+/// Set when the user requests cancel; checked by in-flight conversion commands.
+static CANCEL_FLAG: AtomicBool = AtomicBool::new(false);
+/// PID of the active Magick / LibreOffice child (for kill from cancel).
+static ACTIVE_PID: Mutex<Option<u32>> = Mutex::new(None);
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -463,11 +471,13 @@ pub fn convert_image(input_path: &str, output_path: &str) -> Result<(), String> 
         return Err("missing_imagemagick".into());
     }
 
-    let output = prepare_command(&imagemagick.name)
-        .arg(input_path)
-        .arg(output_path)
-        .output()
-        .map_err(|_| "spawn_failed".to_string())?;
+    let mut command = prepare_command(&imagemagick.name);
+    command.arg(input_path).arg(output_path);
+
+    let output = match run_managed_command(command, Some(MAGICK_CONVERT_TIMEOUT)) {
+        Ok(o) => o,
+        Err(e) => return Err(map_command_run_error(e)),
+    };
 
     if output.status.success() {
         Ok(())
@@ -541,10 +551,15 @@ pub fn convert_pdf_to_images(
         command.arg("-quality").arg(jpg_quality.to_string());
     }
 
-    let output = command
-        .arg(&pattern)
-        .output()
-        .map_err(|_| "spawn_failed".to_string())?;
+    command.arg(&pattern);
+
+    let output = match run_managed_command(command, Some(MAGICK_CONVERT_TIMEOUT)) {
+        Ok(o) => o,
+        Err(e) => {
+            let _ = std::fs::remove_dir_all(&pages_dir);
+            return Err(map_command_run_error(e));
+        }
+    };
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -599,9 +614,10 @@ pub fn combine_images_to_pdf(input_paths: &[String], output_path: &str) -> Resul
     }
     command.arg(output_path);
 
-    let output = command
-        .output()
-        .map_err(|_| "spawn_failed".to_string())?;
+    let output = match run_managed_command(command, Some(MAGICK_CONVERT_TIMEOUT)) {
+        Ok(o) => o,
+        Err(e) => return Err(map_command_run_error(e)),
+    };
 
     if output.status.success() {
         Ok(())
@@ -702,32 +718,83 @@ fn prepare_soffice_command(program: &str) -> Command {
 enum CommandRunError {
     Spawn,
     Timeout,
+    Cancelled,
     Wait,
 }
 
-/// Kill a child (and its tree on Windows — LibreOffice often spawns `soffice.bin`).
-fn kill_child_tree(child: &mut std::process::Child) {
+fn map_command_run_error(error: CommandRunError) -> String {
+    match error {
+        CommandRunError::Spawn | CommandRunError::Wait => "spawn_failed".into(),
+        CommandRunError::Timeout => "convert_timeout".into(),
+        CommandRunError::Cancelled => "convert_cancelled".into(),
+    }
+}
+
+/// Clear a previous cancel request before starting a new conversion (UI).
+pub fn reset_conversion_cancel() {
+    CANCEL_FLAG.store(false, Ordering::SeqCst);
+}
+
+/// Ask the in-flight Magick / LibreOffice process to stop.
+pub fn cancel_conversion() {
+    CANCEL_FLAG.store(true, Ordering::SeqCst);
+    let pid = ACTIVE_PID
+        .lock()
+        .ok()
+        .and_then(|guard| guard.as_ref().copied());
+    if let Some(pid) = pid {
+        kill_pid_tree(pid);
+    }
+}
+
+fn set_active_pid(pid: Option<u32>) {
+    if let Ok(mut guard) = ACTIVE_PID.lock() {
+        *guard = pid;
+    }
+}
+
+fn cancel_requested() -> bool {
+    CANCEL_FLAG.load(Ordering::SeqCst)
+}
+
+/// Kill a process tree by PID (Windows uses `taskkill /T`).
+fn kill_pid_tree(pid: u32) {
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        let pid = child.id();
         let _ = Command::new("taskkill")
             .args(["/PID", &pid.to_string(), "/T", "/F"])
             .creation_flags(CREATE_NO_WINDOW)
             .output();
     }
+    #[cfg(not(windows))]
+    {
+        let _ = Command::new("kill").args(["-TERM", &pid.to_string()]).output();
+        let _ = Command::new("kill").args(["-KILL", &pid.to_string()]).output();
+    }
+}
+
+/// Kill a child (and its tree on Windows — LibreOffice often spawns `soffice.bin`).
+fn kill_child_tree(child: &mut std::process::Child) {
+    kill_pid_tree(child.id());
     let _ = child.kill();
     let _ = child.wait();
 }
 
-/// Run a command, collecting stdout/stderr, and kill it if it exceeds `timeout`.
-fn run_command_with_timeout(
+/// Run a conversion command, collecting stdout/stderr.
+/// Stops on user cancel and optionally on `timeout`.
+fn run_managed_command(
     mut command: Command,
-    timeout: Duration,
+    timeout: Option<Duration>,
 ) -> Result<Output, CommandRunError> {
+    if cancel_requested() {
+        return Err(CommandRunError::Cancelled);
+    }
+
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
     let mut child = command.spawn().map_err(|_| CommandRunError::Spawn)?;
+    set_active_pid(Some(child.id()));
 
     let stdout_pipe = child.stdout.take();
     let stderr_pipe = child.stderr.take();
@@ -747,24 +814,36 @@ fn run_command_with_timeout(
         buf
     });
 
-    let deadline = Instant::now() + timeout;
-    loop {
-        match child.try_wait() {
+    let deadline = timeout.map(|d| Instant::now() + d);
+    let result = loop {
+            if cancel_requested() {
+                kill_child_tree(&mut child);
+                let _ = stdout_handle.join();
+                let _ = stderr_handle.join();
+                break Err(CommandRunError::Cancelled);
+            }
+
+            match child.try_wait() {
             Ok(Some(status)) => {
                 let stdout = stdout_handle.join().unwrap_or_default();
                 let stderr = stderr_handle.join().unwrap_or_default();
-                return Ok(Output {
+                if cancel_requested() {
+                    break Err(CommandRunError::Cancelled);
+                }
+                break Ok(Output {
                     status,
                     stdout,
                     stderr,
                 });
             }
             Ok(None) => {
-                if Instant::now() >= deadline {
-                    kill_child_tree(&mut child);
-                    let _ = stdout_handle.join();
-                    let _ = stderr_handle.join();
-                    return Err(CommandRunError::Timeout);
+                if let Some(deadline) = deadline {
+                    if Instant::now() >= deadline {
+                        kill_child_tree(&mut child);
+                        let _ = stdout_handle.join();
+                        let _ = stderr_handle.join();
+                        break Err(CommandRunError::Timeout);
+                    }
                 }
                 std::thread::sleep(Duration::from_millis(200));
             }
@@ -772,10 +851,13 @@ fn run_command_with_timeout(
                 kill_child_tree(&mut child);
                 let _ = stdout_handle.join();
                 let _ = stderr_handle.join();
-                return Err(CommandRunError::Wait);
+                break Err(CommandRunError::Wait);
             }
         }
-    }
+    };
+
+    set_active_pid(None);
+    result
 }
 
 /// Convert Word/Excel (`.docx` / `.xlsx`) to PDF via system LibreOffice headless.
@@ -823,15 +905,11 @@ pub fn convert_document_to_pdf(input_path: &str, output_path: &str) -> Result<()
         .arg(&work_dir)
         .arg(input_path);
 
-    let output = match run_command_with_timeout(command, LIBREOFFICE_CONVERT_TIMEOUT) {
+    let output = match run_managed_command(command, Some(LIBREOFFICE_CONVERT_TIMEOUT)) {
         Ok(o) => o,
-        Err(CommandRunError::Timeout) => {
+        Err(e) => {
             cleanup(&[work_dir, profile_dir]);
-            return Err("convert_timeout".into());
-        }
-        Err(CommandRunError::Spawn | CommandRunError::Wait) => {
-            cleanup(&[work_dir, profile_dir]);
-            return Err("spawn_failed".into());
+            return Err(map_command_run_error(e));
         }
     };
 
@@ -972,7 +1050,7 @@ mod tests {
 
     #[test]
     fn run_with_timeout_kills_slow_process() {
-        use super::{run_command_with_timeout, CommandRunError};
+        use super::{run_managed_command, CommandRunError};
         use std::process::Command;
         use std::time::Duration;
 
@@ -991,7 +1069,7 @@ mod tests {
             c
         };
 
-        let result = run_command_with_timeout(cmd, Duration::from_secs(1));
+        let result = run_managed_command(cmd, Some(Duration::from_secs(1)));
         assert!(matches!(result, Err(CommandRunError::Timeout)));
     }
 }

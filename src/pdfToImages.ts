@@ -2,6 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { DropTarget } from "./appDragDrop";
 import {
+  bindCancelButton,
+  isConvertCancelled,
+  resetConversionCancel,
+} from "./cancelConvert";
+import {
   applyHumanizedError,
   clearHumanizedError,
   humanizeError,
@@ -42,6 +47,9 @@ export function initPdfToImages(
   const selection = document.querySelector<HTMLElement>("#pdf-selection");
   const openFolder = bindOpenFolderButton(
     document.querySelector<HTMLButtonElement>("#pdf-open-folder"),
+  );
+  const cancel = bindCancelButton(
+    document.querySelector<HTMLButtonElement>("#pdf-convert-cancel"),
   );
 
   if (
@@ -233,11 +241,13 @@ export function initPdfToImages(
       busy = true;
       syncEnabled();
       convertButton.classList.add("is-busy");
+      cancel?.setBusy(true);
       openFolder?.hide();
       statusEl.hidden = false;
       statusEl.classList.remove("is-error", "is-success");
       statusEl.replaceChildren();
       statusEl.textContent = t(locale, "pdfConvertProgress");
+      await resetConversionCancel();
 
       try {
         const result = await invoke<{
@@ -260,13 +270,18 @@ export function initPdfToImages(
         const humanized = humanizeError(locale, error, "pdfConvertFailed");
         statusEl.classList.add("is-error");
         statusEl.replaceChildren();
-        statusEl.textContent = humanized.message;
+        statusEl.textContent = isConvertCancelled(error)
+          ? t(locale, "convertCancelled")
+          : humanized.message;
         openFolder?.hide();
         statusEl.focus();
-        showInvokeError(error, locale);
+        if (!isConvertCancelled(error)) {
+          showInvokeError(error, locale);
+        }
       } finally {
         busy = false;
         convertButton.classList.remove("is-busy");
+        cancel?.setBusy(false);
         syncEnabled();
       }
     })();
@@ -288,6 +303,7 @@ export function initPdfToImages(
     },
     refreshCopy: (locale) => {
       openFolder?.refreshCopy(t(locale, "openOutputFolder"));
+      cancel?.refreshCopy(t(locale, "convertCancelButton"));
       formatButtons.forEach((button) => {
         const key = button.dataset.i18n;
         if (key === "formatPng" || key === "formatJpg") {

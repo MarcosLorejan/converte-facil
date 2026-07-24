@@ -1,5 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import {
+  bindCancelButton,
+  isConvertCancelled,
+  resetConversionCancel,
+} from "./cancelConvert";
 import type { QueueItemStatus } from "./dropzone";
 import {
   applyHumanizedError,
@@ -70,13 +75,17 @@ export function initConvertControls(): ConvertUi | null {
   const openFolder = bindOpenFolderButton(
     document.querySelector<HTMLButtonElement>("#convert-open-folder"),
   );
+  const cancel = bindCancelButton(
+    document.querySelector<HTMLButtonElement>("#convert-cancel"),
+  );
   if (!button || !status) return null;
 
   const setBusy = (busy: boolean) => {
     button.disabled = busy || button.dataset.ready !== "true";
     button.classList.toggle("is-busy", busy);
-    status.hidden = !busy;
+    cancel?.setBusy(busy);
     if (busy) {
+      status.hidden = false;
       openFolder?.hide();
       showStatusMessage(status, button.dataset.progressText ?? "");
     }
@@ -92,6 +101,7 @@ export function initConvertControls(): ConvertUi | null {
   const refreshCopy = (locale: Locale) => {
     button.dataset.progressText = t(locale, "convertProgress");
     openFolder?.refreshCopy(t(locale, "openOutputFolder"));
+    cancel?.refreshCopy(t(locale, "convertCancelButton"));
     if (!status.hidden && button.classList.contains("is-busy")) {
       showStatusMessage(status, t(locale, "convertProgress"));
     }
@@ -139,6 +149,7 @@ export async function runBatchConversion(options: {
   ui.status.hidden = false;
   ui.status.classList.remove("is-error", "is-success");
   showStatusMessage(ui.status, t(locale, "convertProgress"));
+  await resetConversionCancel();
 
   const ext = extensionForFormat(format);
   const usedNames = new Set<string>();
@@ -146,6 +157,7 @@ export async function runBatchConversion(options: {
   let failCount = 0;
   let renamedCount = 0;
   let lastHumanized: HumanizedError | null = null;
+  let cancelled = false;
 
   try {
     for (const item of queue) {
@@ -167,6 +179,18 @@ export async function runBatchConversion(options: {
         setItemStatus(item.path, "success");
         successCount += 1;
       } catch (error) {
+        if (isConvertCancelled(error)) {
+          cancelled = true;
+          const humanized = humanizeError(locale, error, "convertFailed");
+          setItemStatus(
+            item.path,
+            "error",
+            humanized.message,
+            humanized.details,
+          );
+          lastHumanized = humanized;
+          break;
+        }
         const humanized = humanizeError(locale, error, "convertFailed");
         lastHumanized = humanized;
         setItemStatus(
@@ -180,7 +204,11 @@ export async function runBatchConversion(options: {
     }
 
     ui.status.classList.remove("is-error", "is-success");
-    if (failCount === 0) {
+    if (cancelled) {
+      ui.status.classList.add("is-error");
+      ui.openFolder?.hide();
+      showStatusMessage(ui.status, t(locale, "convertCancelled"));
+    } else if (failCount === 0) {
       ui.status.classList.add("is-success");
       const base = t(locale, "convertSuccess");
       const note =
@@ -212,7 +240,7 @@ export async function runBatchConversion(options: {
     }
     ui.status.focus();
   } finally {
-    ui.button.classList.remove("is-busy");
+    ui.setBusy(false);
     ui.button.disabled = ui.button.dataset.ready !== "true";
   }
 }

@@ -3,6 +3,11 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import type { DropTarget } from "./appDragDrop";
 import {
+  bindCancelButton,
+  isConvertCancelled,
+  resetConversionCancel,
+} from "./cancelConvert";
+import {
   applyHumanizedError,
   clearHumanizedError,
   humanizeError,
@@ -47,6 +52,9 @@ export function initDocumentsToPdf(
   const convertBlock = document.querySelector<HTMLElement>("#docs-convert-block");
   const openFolder = bindOpenFolderButton(
     document.querySelector<HTMLButtonElement>("#docs-open-folder"),
+  );
+  const cancel = bindCancelButton(
+    document.querySelector<HTMLButtonElement>("#docs-convert-cancel"),
   );
 
   if (
@@ -209,11 +217,13 @@ export function initDocumentsToPdf(
       busy = true;
       syncEnabled();
       convertButton.classList.add("is-busy");
+      cancel?.setBusy(true);
       openFolder?.hide();
       statusEl.hidden = false;
       statusEl.classList.remove("is-error", "is-success");
       statusEl.textContent = t(locale, "docsConvertProgress");
       statusEl.focus();
+      await resetConversionCancel();
 
       try {
         await invoke("convert_document_to_pdf", {
@@ -226,16 +236,21 @@ export function initDocumentsToPdf(
       } catch (error) {
         const humanized = humanizeError(locale, error, "docsConvertFailed");
         statusEl.classList.add("is-error");
-        statusEl.textContent = humanized.message;
+        statusEl.textContent = isConvertCancelled(error)
+          ? t(locale, "convertCancelled")
+          : humanized.message;
         openFolder?.hide();
-        applyHumanizedError(errorEl, locale, humanized);
-        if (parseInvokeError(error).code === "missing_libreoffice") {
-          libreOfficeAvailable = false;
-          syncGuide();
+        if (!isConvertCancelled(error)) {
+          applyHumanizedError(errorEl, locale, humanized);
+          if (parseInvokeError(error).code === "missing_libreoffice") {
+            libreOfficeAvailable = false;
+            syncGuide();
+          }
         }
       } finally {
         busy = false;
         convertButton.classList.remove("is-busy");
+        cancel?.setBusy(false);
         syncEnabled();
       }
     })();
@@ -261,6 +276,7 @@ export function initDocumentsToPdf(
     },
     refreshCopy: (locale) => {
       openFolder?.refreshCopy(t(locale, "openOutputFolder"));
+      cancel?.refreshCopy(t(locale, "convertCancelButton"));
       if (!statusEl.hidden && convertButton.classList.contains("is-busy")) {
         statusEl.textContent = t(locale, "docsConvertProgress");
       }
