@@ -71,7 +71,7 @@ Several of these are slow enough to look like a hang. They are not. Times are fr
 
 Things that look broken but are not:
 
-- **The first Rust build takes about four minutes.** `Cargo.lock` has 474 packages and `target/` starts empty, so the whole Tauri dependency tree compiles. The only progress signal is a `Building [===> ] 373/375` counter. CI's Rust job takes ~3m51s even with caching. Do not interrupt it; allow at least a 6 minute timeout.
+- **The first Rust build takes about four minutes.** `Cargo.lock` has 474 packages and `target/` starts empty, so the whole Tauri dependency tree compiles. The only progress signal is a `Building [===> ] 373/375` counter. CI's Rust job ranges from ~1m20s with a warm `rust-cache` to ~3m50s on a cold one. Do not interrupt it; allow at least a 6 minute timeout.
 - **`cargo test --lib` prints `test system_libreoffice_converts_docx_if_installed has been running for over 60 seconds`.** That test shells out to a real installed LibreOffice, so its runtime depends on your machine. The message is cargo's standard long-running-test notice, not a failure.
 - **`npm` output appears as a red `NativeCommandError` block in PowerShell.** PowerShell renders npm's stderr that way, including the harmless `npm warn Unknown env config "devdir"`. Check the exit code, not the color.
 - **`npm run tauri:dev` never exits.** It is a long-lived GUI process. Success looks like a `Running …converte-facil.exe` line plus the Vite dev server answering on `http://localhost:1420`. Background it rather than waiting for it to finish.
