@@ -325,8 +325,14 @@
           </section>
         </div>
 
-        <section class="engines" aria-live="polite">
-          <h2 data-i18n="enginesTitle">Tools on this computer</h2>
+        <details class="engines">
+          <summary class="engines-summary" data-i18n="enginesAdvanced">
+            Advanced
+          </summary>
+          <p class="engines-help" data-i18n="enginesAdvancedHelp">
+            Conversion tool status — useful if something is not working.
+          </p>
+          <h2 class="engines-title" data-i18n="enginesTitle">Tools on this computer</h2>
           <ul class="engine-list">
             <li id="engine-imagemagick" class="engine-item is-checking">
               <div class="engine-row">
@@ -354,7 +360,7 @@
             </li>
           </ul>
           <p id="engines-error" class="engines-error" hidden data-i18n="enginesError"></p>
-        </section>
+        </details>
       </main>
     </div>
   </body>
