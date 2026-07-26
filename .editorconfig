@@ -1,0 +1,26 @@
+# Baseline whitespace rules, matching the existing tree.
+#
+# end_of_line is deliberately not set: this repo has no .gitattributes, so line
+# endings are left to git's autocrlf handling. Declaring it here would fight
+# that and produce noisy diffs. Normalizing properly is a separate change.
+
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.rs]
+indent_size = 4
+
+# Trailing whitespace is significant in Markdown (two spaces forces a line break).
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{ico,icns,png,7z,exe,dll}]
+charset = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset

@@ -1,0 +1,12 @@
+# Pins the Rust toolchain so a new upstream stable cannot turn a green PR red.
+#
+# rustup reads this on any cargo invocation in the repo, so local and CI resolve
+# to the same version without CI restating it.
+#
+# To bump: change `channel`, run the validation loop in docs/DEVELOPMENT.md, and
+# commit the result on its own.
+
+[toolchain]
+channel = "1.94.1"
+components = ["rustfmt", "clippy"]
+profile = "minimal"
