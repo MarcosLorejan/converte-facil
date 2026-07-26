@@ -40,7 +40,7 @@ jobs:
         run: npm run build
 
   rust:
-    name: Rust (cargo test)
+    name: Rust (fmt + clippy + test)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
