@@ -161,12 +161,7 @@ export async function runBatchConversion(options: {
         }
         const humanized = humanizeError(locale, error, "convertFailed");
         lastHumanized = humanized;
-        setItemStatus(
-          item.path,
-          "error",
-          humanized.message,
-          humanized.details,
-        );
+        setItemStatus(item.path, "error", humanized.message, humanized.details);
         failCount += 1;
       }
     }

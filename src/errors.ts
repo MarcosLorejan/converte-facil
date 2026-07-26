@@ -41,8 +41,7 @@ const DETAIL_PATTERNS: ReadonlyArray<{ test: RegExp; key: MessageKey }> = [
     key: "errorMissingHeicCodec",
   },
   {
-    test:
-      /no decode delegate|no encode delegate|unsupported.*(format|image|codec)|improper image header/i,
+    test: /no decode delegate|no encode delegate|unsupported.*(format|image|codec)|improper image header/i,
     key: "errorUnsupportedCodec",
   },
   {

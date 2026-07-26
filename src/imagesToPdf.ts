@@ -22,7 +22,8 @@ import { uniqueConvertedSibling } from "./outputPaths";
 
 type QueueItem = SelectedImage;
 
-type PlainErrorKey = "dropUnsupported" | "dropNoneAdded" | "dropSomeUnsupported";
+type PlainErrorKey =
+  "dropUnsupported" | "dropNoneAdded" | "dropSomeUnsupported";
 
 export type ImagesToPdfController = {
   refreshCopy: (locale: Locale) => void;
@@ -31,11 +32,15 @@ export type ImagesToPdfController = {
 export function initImagesToPdf(
   getLocale: () => Locale,
 ): ImagesToPdfController | null {
-  const pickButton = document.querySelector<HTMLButtonElement>("#images-to-pdf-pick");
+  const pickButton = document.querySelector<HTMLButtonElement>(
+    "#images-to-pdf-pick",
+  );
   const errorEl = document.querySelector<HTMLElement>("#images-to-pdf-error");
   const queueRoot = document.querySelector<HTMLElement>("#images-to-pdf-queue");
   const list = document.querySelector<HTMLElement>("#images-to-pdf-list");
-  const convertButton = document.querySelector<HTMLButtonElement>("#images-to-pdf-convert");
+  const convertButton = document.querySelector<HTMLButtonElement>(
+    "#images-to-pdf-convert",
+  );
   const statusEl = document.querySelector<HTMLElement>("#images-to-pdf-status");
   const openFolder = bindOpenFolderButton(
     document.querySelector<HTMLButtonElement>("#images-to-pdf-open-folder"),
@@ -44,7 +49,14 @@ export function initImagesToPdf(
     document.querySelector<HTMLButtonElement>("#images-to-pdf-cancel"),
   );
 
-  if (!pickButton || !errorEl || !queueRoot || !list || !convertButton || !statusEl) {
+  if (
+    !pickButton ||
+    !errorEl ||
+    !queueRoot ||
+    !list ||
+    !convertButton ||
+    !statusEl
+  ) {
     return null;
   }
 

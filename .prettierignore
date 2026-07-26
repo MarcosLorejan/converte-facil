@@ -13,3 +13,8 @@ third-party/
 # being rewritten, so those stay hand-formatted.
 *.md
 .github/
+
+# Hand-maintained accessible markup. Prettier's whitespace-sensitive HTML mode
+# rewrites it with dangling '>' across ~300 lines, which hurts readability of the
+# data-i18n attributes contributors edit most. Revisit deliberately.
+index.html

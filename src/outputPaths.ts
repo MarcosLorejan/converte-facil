@@ -1,5 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import { convertedStem, joinPath, parentDir, stemFromPath } from "./pathHelpers";
+import {
+  convertedStem,
+  joinPath,
+  parentDir,
+  stemFromPath,
+} from "./pathHelpers";
 
 export type UniquePathResult = {
   path: string;

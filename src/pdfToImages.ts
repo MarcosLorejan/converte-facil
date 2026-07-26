@@ -42,8 +42,9 @@ export function initPdfToImages(
   const errorEl = document.querySelector<HTMLElement>("#pdf-error");
   const formatList = document.querySelector<HTMLElement>("#pdf-format-list");
   const qualityList = document.querySelector<HTMLElement>("#pdf-quality-list");
-  const convertButton =
-    document.querySelector<HTMLButtonElement>("#pdf-convert-button");
+  const convertButton = document.querySelector<HTMLButtonElement>(
+    "#pdf-convert-button",
+  );
   const statusEl = document.querySelector<HTMLElement>("#pdf-convert-status");
   const selection = document.querySelector<HTMLElement>("#pdf-selection");
   const openFolder = bindOpenFolderButton(

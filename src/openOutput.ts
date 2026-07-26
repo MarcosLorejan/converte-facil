@@ -4,7 +4,10 @@ import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
  * Reveal a saved file in Explorer, or open a folder.
  * Prefers revealing a file; falls back to opening the directory.
  */
-export async function openOutputLocation(path: string, isDirectory = false): Promise<void> {
+export async function openOutputLocation(
+  path: string,
+  isDirectory = false,
+): Promise<void> {
   if (isDirectory) {
     await openPath(path);
     return;
