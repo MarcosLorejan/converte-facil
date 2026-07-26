@@ -92,8 +92,7 @@ fn validate_existing_file(path: &str) -> Result<&Path, String> {
 
 fn validate_output_file_path(path: &str) -> Result<&Path, String> {
     let p = validate_absolute_path(path)?;
-    if p
-        .file_name()
+    if p.file_name()
         .map(|name| name.to_string_lossy().starts_with('-'))
         .unwrap_or(true)
     {
@@ -175,11 +174,7 @@ fn run_probe_command(mut command: Command) -> Option<Output> {
 }
 
 fn probe_command(candidates: &[&str], args: &[&str]) -> ToolStatus {
-    let display_name = candidates
-        .first()
-        .copied()
-        .unwrap_or("tool")
-        .to_string();
+    let display_name = candidates.first().copied().unwrap_or("tool").to_string();
 
     for binary in candidates {
         let mut command = Command::new(binary);
@@ -334,8 +329,7 @@ fn find_system_libreoffice() -> Option<(PathBuf, String)> {
                     if !name.starts_with("libreoffice") {
                         continue;
                     }
-                    if let Some(found) =
-                        find_working_soffice_in_dir(&entry.path().join("program"))
+                    if let Some(found) = find_working_soffice_in_dir(&entry.path().join("program"))
                     {
                         return Some(found);
                     }
@@ -550,13 +544,9 @@ fn prepare_command(program: &str) -> Command {
     }
 
     if !path_dirs.is_empty() {
-        let extra = std::env::join_paths(
-            path_dirs
-                .into_iter()
-                .chain(std::env::var_os("PATH").map_or_else(Vec::new, |p| {
-                    std::env::split_paths(&p).collect()
-                })),
-        )
+        let extra = std::env::join_paths(path_dirs.into_iter().chain(
+            std::env::var_os("PATH").map_or_else(Vec::new, |p| std::env::split_paths(&p).collect()),
+        ))
         .ok();
         if let Some(path) = extra {
             command.env("PATH", path);
@@ -631,11 +621,7 @@ pub fn convert_image(input_path: &str, output_path: &str) -> Result<(), String> 
     if output.status.success() {
         Ok(())
     } else {
-        Err(tool_error(
-            "convert_failed",
-            &output.stderr,
-            &output.stdout,
-        ))
+        Err(tool_error("convert_failed", &output.stderr, &output.stdout))
     }
 }
 
@@ -961,8 +947,12 @@ fn kill_pid_tree(pid: u32) {
     }
     #[cfg(not(windows))]
     {
-        let _ = Command::new("kill").args(["-TERM", &pid.to_string()]).output();
-        let _ = Command::new("kill").args(["-KILL", &pid.to_string()]).output();
+        let _ = Command::new("kill")
+            .args(["-TERM", &pid.to_string()])
+            .output();
+        let _ = Command::new("kill")
+            .args(["-KILL", &pid.to_string()])
+            .output();
     }
 }
 
@@ -1007,14 +997,14 @@ fn run_managed_command(
 
     let deadline = timeout.map(|d| Instant::now() + d);
     let result = loop {
-            if cancel_requested() {
-                kill_child_tree(&mut child);
-                let _ = stdout_handle.join();
-                let _ = stderr_handle.join();
-                break Err(CommandRunError::Cancelled);
-            }
+        if cancel_requested() {
+            kill_child_tree(&mut child);
+            let _ = stdout_handle.join();
+            let _ = stderr_handle.join();
+            break Err(CommandRunError::Cancelled);
+        }
 
-            match child.try_wait() {
+        match child.try_wait() {
             Ok(Some(status)) => {
                 let stdout = stdout_handle.join().unwrap_or_default();
                 let stderr = stderr_handle.join().unwrap_or_default();
@@ -1307,11 +1297,7 @@ mod tests {
 
         let result =
             super::convert_document_to_pdf(input.to_str().unwrap(), output.to_str().unwrap());
-        assert!(
-            result.is_ok(),
-            "docx convert failed: {:?}",
-            result.err()
-        );
+        assert!(result.is_ok(), "docx convert failed: {:?}", result.err());
         assert!(output.is_file(), "expected PDF at {}", output.display());
         let _ = std::fs::remove_dir_all(&dir);
     }

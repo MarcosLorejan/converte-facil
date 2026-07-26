@@ -1,0 +1,5 @@
+# Committed to make the formatting contract explicit rather than implicit in
+# whatever rustfmt default ships with the pinned toolchain. Values below are the
+# current defaults; the point is that CI and local runs agree.
+
+edition = "2021"
