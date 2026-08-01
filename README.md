@@ -26,7 +26,7 @@ Built so anyone can use it — large UI, clear steps, and language options (Engl
 - Desktop UI: **Tauri 2** + Vite + TypeScript (see [ADR 0001](docs/adr/0001-desktop-stack.md))
 - Engine: [ImageMagick](https://github.com/ImageMagick/ImageMagick)
 - PDF: Ghostscript
-- Documents: system [LibreOffice](https://www.libreoffice.org/) (`soffice`) — not bundled in the installer (see [ADR 0002](docs/adr/0002-libreoffice-bundling.md))
+- Documents: system [LibreOffice](https://www.libreoffice.org/) (`soffice`) — not bundled in the installer (see [ADR 0002](docs/adr/0002-libreoffice-strategy.md))
 - Initial target: Windows installable `.exe`
 - UI i18n: English + Portuguese (see [docs/i18n.md](docs/i18n.md))
 
@@ -79,7 +79,7 @@ Details, version pins, and license notes: [docs/sidecars.md](docs/sidecars.md) �
 
 ## Tracking
 
-See [milestones](../../milestones) and [issues](../../issues) for the full plan.
+See [milestones](https://github.com/MarcosLorejan/converte-facil/milestones) and [issues](https://github.com/MarcosLorejan/converte-facil/issues) for the full plan.
 
 Usability sessions (non-technical users): [docs/usability-test.md](docs/usability-test.md).
 
