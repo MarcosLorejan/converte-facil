@@ -10,6 +10,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  links:
+    name: Docs (relative links)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # --offline resolves only on-disk links, so the job cannot fail because an
+      # external host rate-limited us.
+      - name: Check relative links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: "--offline --no-progress '**/*.md'"
+          fail: true
+
   frontend:
     name: Frontend (test + typecheck + build)
     runs-on: ubuntu-latest

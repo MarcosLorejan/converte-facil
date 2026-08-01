@@ -26,7 +26,7 @@ Built so anyone can use it — large UI, clear steps, and language options (Engl
 - Desktop UI: **Tauri 2** + Vite + TypeScript (see [ADR 0001](docs/adr/0001-desktop-stack.md))
 - Engine: [ImageMagick](https://github.com/ImageMagick/ImageMagick)
 - PDF: Ghostscript
-- Documents: system [LibreOffice](https://www.libreoffice.org/) (`soffice`) — not bundled in the installer (see [ADR 0002](docs/adr/0002-libreoffice-bundling.md))
+- Documents: system [LibreOffice](https://www.libreoffice.org/) (`soffice`) — not bundled in the installer (see [ADR 0002](docs/adr/0002-libreoffice-strategy.md))
 - Initial target: Windows installable `.exe`
 - UI i18n: English + Portuguese (see [docs/i18n.md](docs/i18n.md))
 
@@ -44,6 +44,18 @@ Prerequisites:
 npm install
 npm run tauri:dev
 ```
+
+The first `tauri:dev` build compiles the whole Rust dependency tree and takes **about four minutes** — that is normal, not a hang.
+
+Before opening a PR, run the same checks CI runs:
+
+```bash
+npm test
+npm run build
+cargo test --manifest-path src-tauri/Cargo.toml --lib
+```
+
+Full development reference — validation loop, expected durations, and conventions: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**
 
 Production build (creates the Windows NSIS installer under `src-tauri/target/release/bundle/nsis/`):
 
@@ -67,14 +79,17 @@ Details, version pins, and license notes: [docs/sidecars.md](docs/sidecars.md) �
 
 ## Tracking
 
-See [milestones](../../milestones) and [issues](../../issues) for the full plan.
+See [milestones](https://github.com/MarcosLorejan/converte-facil/milestones) and [issues](https://github.com/MarcosLorejan/converte-facil/issues) for the full plan.
 
 Usability sessions (non-technical users): [docs/usability-test.md](docs/usability-test.md).
 
 ## Community
 
 - [Contributing](CONTRIBUTING.md)
+- [Development guide](docs/DEVELOPMENT.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
+
+Working on this repo with an AI coding agent? Start at [AGENTS.md](AGENTS.md).
 
 ## Security
 
