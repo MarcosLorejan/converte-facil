@@ -38,16 +38,23 @@ Run these before opening a PR. They are the same checks CI runs, ordered fastest
 
 ```bash
 npm test                                              # vitest, 18 tests
-npm run build                                         # tsc typecheck + vite production build
+npm run lint                                          # eslint
+npm run format:check                                  # prettier
+npm run typecheck                                     # tsc --noEmit
+npm run build                                         # vite production build
+
+cargo fmt --manifest-path src-tauri/Cargo.toml --all --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --lib  # 17 tests
 ```
 
 Notes on each:
 
-- `npm run build` is currently the only way to typecheck. It runs `tsc && vite build`, so it also produces a `dist/` bundle you do not need. A dedicated `npm run typecheck` script is tracked in [#102](https://github.com/MarcosLorejan/converte-facil/issues/102). Until then, `npx tsc --noEmit` typechecks without bundling.
+- `npm run lint:fix` and `npm run format` apply fixes; the `lint` and `format:check` variants only report, which is what CI runs.
+- `npm run typecheck` is `tsc --noEmit`, so it checks types without writing a `dist/` bundle. `npm run build` still typechecks as part of `tsc && vite build`.
 - `tsconfig.json` sets `strict`, `noUnusedLocals`, `noUnusedParameters`, and `noFallthroughCasesInSwitch`, so the typecheck gives real signal rather than just confirming a bundle.
 - The `--manifest-path` flag is required. There is no root `Cargo.toml` workspace, so a bare `cargo test` from the repo root fails.
-- There is no linter or formatter yet. ESLint + Prettier are tracked in [#101](https://github.com/MarcosLorejan/converte-facil/issues/101), and `cargo fmt` + `clippy` in [#103](https://github.com/MarcosLorejan/converte-facil/issues/103).
+- Clippy runs with `-D warnings`, so a new warning fails CI.
 
 Scope a single frontend test file while iterating:
 
@@ -64,8 +71,12 @@ Several of these are slow enough to look like a hang. They are not. Times are fr
 | --- | --- | --- |
 | `npm install` | ~30s | — |
 | `npm test` | ~10s | ~3s |
+| `npm run lint` | — | ~7s |
+| `npm run format:check` | — | ~2s |
+| `npm run typecheck` | — | ~2s |
 | `npm run build` | ~10s | ~8s |
-| `npx tsc --noEmit` | — | ~7s |
+| `cargo fmt … --check` | — | <1s |
+| `cargo clippy … -D warnings` | **~4 min** | ~50s |
 | `cargo test … --lib` | **~4 min** | ~40s |
 | `npm run tauri:dev` (first build) | **~4 min** | ~20s |
 
@@ -84,7 +95,9 @@ Not every task is runnable in every environment. This matters most in headless o
 | --- | --- | --- | --- |
 | `npm install` | yes | — | — |
 | `npm test` | yes | — | — |
-| `npm run build` / `npx tsc --noEmit` | yes | — | — |
+| `npm run lint` / `format:check` / `typecheck` | yes | — | — |
+| `npm run build` | yes | — | — |
+| `cargo fmt … --check` / `cargo clippy …` | yes (Windows) | — | — |
 | `cargo test … --lib` | yes (Windows) | LibreOffice tests return early if absent | — |
 | `npm run tauri:dev` | — | — | yes |
 | `npm run tauri:build` | — | for working conversions | yes |
@@ -92,7 +105,7 @@ Not every task is runnable in every environment. This matters most in headless o
 
 The full Rust build needs the Windows MSVC toolchain, which is why the CI `rust` job pins `windows-latest` while the `frontend` job runs on `ubuntu-latest`.
 
-**If you cannot run a GUI**, treat `npm test` + `npm run build` + `cargo test … --lib` as your complete self-verification loop and do not attempt `tauri:dev` or `tauri:build`.
+**If you cannot run a GUI**, treat the [validation loop](#validation-loop) above as your complete self-verification loop and do not attempt `tauri:dev` or `tauri:build`.
 
 Conversion silently degrades to `PATH` lookup when `src-tauri/sidecars/` was never populated, and nothing in the dev startup output reveals which state you are in. The app resolves engines in this order (see [docs/sidecars.md](sidecars.md)):
 

@@ -50,8 +50,9 @@ The first `tauri:dev` build compiles the whole Rust dependency tree and takes **
 Before opening a PR, run the same checks CI runs:
 
 ```bash
-npm test
-npm run build
+npm test && npm run lint && npm run format:check && npm run typecheck && npm run build
+cargo fmt --manifest-path src-tauri/Cargo.toml --all --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --lib
 ```
 

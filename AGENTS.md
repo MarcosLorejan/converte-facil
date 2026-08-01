@@ -22,17 +22,23 @@ No secrets, no `.env`, no database, no external accounts. See [docs/DEVELOPMENT.
 
 ## Verify your work
 
-Run all three before claiming a change is done:
+Run these before claiming a change is done. They are exactly what CI runs:
 
 ```bash
 npm test                                               # vitest
-npm run build                                          # tsc typecheck + vite build
+npm run lint                                           # eslint
+npm run format:check                                   # prettier
+npm run typecheck                                      # tsc --noEmit
+npm run build                                          # vite build
+
+cargo fmt --manifest-path src-tauri/Cargo.toml --all --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --lib   # rust tests
 ```
 
 - The `--manifest-path` flag is **required**; there is no root `Cargo.toml`, so bare `cargo test` fails from the repo root.
-- `npm run build` is currently the only typecheck path. `npx tsc --noEmit` typechecks without producing a bundle.
-- There is no linter or formatter yet, so match the style of surrounding code. Tooling is tracked in [#101](https://github.com/MarcosLorejan/converte-facil/issues/101) and [#103](https://github.com/MarcosLorejan/converte-facil/issues/103); update this file when it lands.
+- Use `npm run lint:fix` and `npm run format` to apply fixes rather than editing style by hand.
+- Clippy runs with `-D warnings`: a new warning fails the build.
 
 ## Do not treat these as failures
 
@@ -46,7 +52,7 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib   # rust tests
 
 `npm run tauri:dev` is also a long-lived process that never exits. Success is a `Running …converte-facil.exe` line plus the dev server answering on `localhost:1420`. Background it; do not await completion.
 
-In a headless environment, `npm test` + `npm run build` + `cargo test … --lib` is your complete verification loop. The capability matrix in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) spells out what each environment supports.
+In a headless environment, the commands under [Verify your work](#verify-your-work) are your complete verification loop. The capability matrix in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) spells out what each environment supports.
 
 ## Project rules
 
