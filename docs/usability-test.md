@@ -8,10 +8,33 @@
 
 1. Install Converte Fácil from the Windows setup (`.exe`).
 2. Optional: install LibreOffice if testing Documents.
-3. Prepare sample files on the Desktop:
-   - One `.jpg` or `.png` photo
-   - One small `.pdf` (2–3 pages)
-   - One `.docx` (if Documents is in scope)
+3. Generate the sample files (repo root, PowerShell):
+
+   ```powershell
+   npm run usability:samples
+   ```
+
+   This writes a `converte-facil-teste` folder to your Desktop containing:
+
+   | File | Used by |
+   |------|---------|
+   | `foto-1.jpg`, `foto-2.png` | Task A, Task C |
+   | `documento-3-paginas.pdf` | Task B |
+   | `carta-teste.docx` | Task D |
+   | `planilha-teste.xlsx` | Task D (Excel variant) |
+
+   Re-running rewrites those five input files in place and leaves everything else
+   in the folder alone, so it is safe to run before each session and every session
+   starts from identical inputs — keep it that way so notes stay comparable.
+
+   During a session the participant will save conversion **outputs** into this same
+   folder. Those are session evidence: do not clear the folder between sessions
+   without copying them out first. Pass `-OutDir` to write somewhere else:
+
+   ```powershell
+   .\scripts\make-usability-samples.ps1 -OutDir "D:\sessao-03"
+   ```
+
 4. Do **not** explain how the app works.
 
 ## Script (read aloud only the quoted lines)

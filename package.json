@@ -11,6 +11,7 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "sidecars:fetch": "powershell -ExecutionPolicy Bypass -File ./scripts/fetch-sidecars.ps1",
+    "usability:samples": "powershell -ExecutionPolicy Bypass -File ./scripts/make-usability-samples.ps1",
     "test": "vitest run"
   },
   "dependencies": {
