@@ -271,7 +271,9 @@ h1 {
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .drop-zone:hover {
@@ -514,7 +516,8 @@ h1 {
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+  font-family:
+    ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
   font-size: 0.85rem;
   line-height: 1.4;
   color: var(--ink);

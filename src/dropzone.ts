@@ -173,10 +173,7 @@ export function initDropZone(
     if (added.length === 0) {
       showError(
         ui,
-        t(
-          getLocale(),
-          rejected > 0 ? "dropUnsupported" : "dropNoneAdded",
-        ),
+        t(getLocale(), rejected > 0 ? "dropUnsupported" : "dropNoneAdded"),
       );
       return;
     }

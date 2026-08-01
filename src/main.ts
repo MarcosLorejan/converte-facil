@@ -55,9 +55,7 @@ function renderTool(
   }
 
   if (detail) {
-    detail.textContent = status.available
-      ? status.detail ?? status.name
-      : "";
+    detail.textContent = status.available ? (status.detail ?? status.name) : "";
     detail.hidden = !status.available;
   }
 
@@ -146,14 +144,17 @@ window.addEventListener("DOMContentLoaded", () => {
     syncConvertEnabled();
   });
 
-  const dropZone = initDropZone(() => locale, (next) => {
-    queue = next;
-    formatPicker?.setEnabled(next.length > 0);
-    if (next.length === 0) {
-      selectedFormat = null;
-    }
-    syncConvertEnabled();
-  });
+  const dropZone = initDropZone(
+    () => locale,
+    (next) => {
+      queue = next;
+      formatPicker?.setEnabled(next.length > 0);
+      if (next.length === 0) {
+        selectedFormat = null;
+      }
+      syncConvertEnabled();
+    },
+  );
 
   initAppDragDrop(() => modeSwitch?.getMode() ?? "images", {
     images: dropZone,
@@ -162,7 +163,8 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   convertUi?.button.addEventListener("click", () => {
-    if (!convertUi || !dropZone || queue.length === 0 || !selectedFormat) return;
+    if (!convertUi || !dropZone || queue.length === 0 || !selectedFormat)
+      return;
     void runBatchConversion({
       locale,
       queue,

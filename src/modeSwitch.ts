@@ -132,7 +132,7 @@ export function initModeSwitch(
     event.preventDefault();
 
     const index = MODES.indexOf(mode);
-    let next: AppMode = mode;
+    let next: AppMode;
     if (event.key === "Home") {
       next = MODES[0];
     } else if (event.key === "End") {

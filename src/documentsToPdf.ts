@@ -40,20 +40,24 @@ export function initDocumentsToPdf(
   const clearButton = document.querySelector<HTMLButtonElement>("#docs-clear");
   const fileNameEl = document.querySelector<HTMLElement>("#docs-file-name");
   const errorEl = document.querySelector<HTMLElement>("#docs-error");
-  const convertButton =
-    document.querySelector<HTMLButtonElement>("#docs-convert-button");
+  const convertButton = document.querySelector<HTMLButtonElement>(
+    "#docs-convert-button",
+  );
   const statusEl = document.querySelector<HTMLElement>("#docs-convert-status");
   const selection = document.querySelector<HTMLElement>("#docs-selection");
   const guide = document.querySelector<HTMLElement>("#docs-libreoffice-guide");
   const installButton =
     document.querySelector<HTMLButtonElement>("#docs-lo-install");
-  const installStatus =
-    document.querySelector<HTMLElement>("#docs-lo-install-status");
+  const installStatus = document.querySelector<HTMLElement>(
+    "#docs-lo-install-status",
+  );
   const downloadButton =
     document.querySelector<HTMLButtonElement>("#docs-lo-download");
   const checkButton =
     document.querySelector<HTMLButtonElement>("#docs-lo-check");
-  const convertBlock = document.querySelector<HTMLElement>("#docs-convert-block");
+  const convertBlock = document.querySelector<HTMLElement>(
+    "#docs-convert-block",
+  );
   const openFolder = bindOpenFolderButton(
     document.querySelector<HTMLButtonElement>("#docs-open-folder"),
   );

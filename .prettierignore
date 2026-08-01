@@ -1,0 +1,20 @@
+dist/
+node_modules/
+package-lock.json
+
+# Rust is formatted by cargo fmt.
+src-tauri/
+
+# Vendored license texts must stay byte-identical to upstream.
+third-party/
+
+# Prettier is scoped to frontend source for now. Reformatting Markdown and the
+# GitHub templates would produce a large diff across docs that is currently
+# being rewritten, so those stay hand-formatted.
+*.md
+.github/
+
+# Hand-maintained accessible markup. Prettier's whitespace-sensitive HTML mode
+# rewrites it with dangling '>' across ~300 lines, which hurts readability of the
+# data-i18n attributes contributors edit most. Revisit deliberately.
+index.html

@@ -41,8 +41,7 @@ const DETAIL_PATTERNS: ReadonlyArray<{ test: RegExp; key: MessageKey }> = [
     key: "errorMissingHeicCodec",
   },
   {
-    test:
-      /no decode delegate|no encode delegate|unsupported.*(format|image|codec)|improper image header/i,
+    test: /no decode delegate|no encode delegate|unsupported.*(format|image|codec)|improper image header/i,
     key: "errorUnsupportedCodec",
   },
   {
@@ -80,7 +79,17 @@ function rawErrorText(error: unknown): string {
     if (typeof record.error === "string") return record.error;
   }
   if (error == null) return "";
-  return String(error);
+  if (
+    typeof error === "number" ||
+    typeof error === "boolean" ||
+    typeof error === "bigint"
+  ) {
+    return String(error);
+  }
+  // Anything else (objects without a usable message, symbols, functions) would
+  // stringify to noise like "[object Object]" in the Details panel. Returning ""
+  // lets the caller fall back to its own contextual message instead.
+  return "";
 }
 
 /** Split stable code (first line) from optional technical detail. */

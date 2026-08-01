@@ -40,7 +40,10 @@ export function t(locale: Locale, key: MessageKey): string {
   return locales[locale][key] ?? locales.en[key] ?? key;
 }
 
-export function applyTranslations(locale: Locale, root: ParentNode = document): void {
+export function applyTranslations(
+  locale: Locale,
+  root: ParentNode = document,
+): void {
   document.documentElement.lang = locale === "pt-BR" ? "pt-BR" : "en";
   root.querySelectorAll<HTMLElement>("[data-i18n]").forEach((el) => {
     const key = el.dataset.i18n as MessageKey | undefined;

@@ -70,7 +70,9 @@ export function initFormatPicker(
 }
 
 export function readSelectedFormatFromDom(): OutputFormatId | null {
-  const selected = document.querySelector<HTMLElement>(".format-option.is-selected");
+  const selected = document.querySelector<HTMLElement>(
+    ".format-option.is-selected",
+  );
   const id = selected?.dataset.format;
   return id && isOutputFormatId(id) ? id : null;
 }

@@ -29,7 +29,11 @@ describe("parseInvokeError", () => {
 
 describe("humanizeError", () => {
   it("maps known codes to dedicated copy", () => {
-    const result = humanizeError("en", "missing_libreoffice", "docsConvertFailed");
+    const result = humanizeError(
+      "en",
+      "missing_libreoffice",
+      "docsConvertFailed",
+    );
     expect(result.message).toContain("LibreOffice");
     expect(result.details).toBeUndefined();
   });
